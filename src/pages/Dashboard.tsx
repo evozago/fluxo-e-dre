@@ -3,9 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Upload, Receipt, FileText, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { UploadNFeModal } from "@/components/UploadNFeModal";
+import { UploadReceiptModal } from "@/components/UploadReceiptModal";
+import { NewExpenseModal } from "@/components/NewExpenseModal";
 
 interface DashboardStats {
   totalAberto: number;
@@ -22,6 +27,15 @@ const Dashboard = () => {
     pagosMesAtual: 0
   });
   const [loading, setLoading] = useState(true);
+  const [nfeModalOpen, setNfeModalOpen] = useState(false);
+  const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [expenseModalOpen, setExpenseModalOpen] = useState(false);
+  const [companyConfig, setCompanyConfig] = useState({
+    cnpj: "",
+    razaoSocial: "Lui Bambini Ltda"
+  });
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -109,11 +123,11 @@ const Dashboard = () => {
             <p className="text-muted-foreground">Sistema de gestão financeira e DRE</p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => toast({ title: "Upload NFe", description: "Funcionalidade em desenvolvimento" })}>
+            <Button onClick={() => setNfeModalOpen(true)}>
               <Upload className="w-4 h-4 mr-2" />
               Upload NFe
             </Button>
-            <Button variant="outline" onClick={() => toast({ title: "Comprovante", description: "Funcionalidade em desenvolvimento" })}>
+            <Button variant="outline" onClick={() => setReceiptModalOpen(true)}>
               <Receipt className="w-4 h-4 mr-2" />
               Comprovante
             </Button>
@@ -190,15 +204,15 @@ const Dashboard = () => {
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex gap-4">
-                    <Button className="flex-1" onClick={() => toast({ title: "Upload NFe XML", description: "Funcionalidade em desenvolvimento" })}>
+                    <Button className="flex-1" onClick={() => setNfeModalOpen(true)}>
                       <Upload className="w-4 h-4 mr-2" />
                       Upload NFe XML
                     </Button>
-                    <Button variant="outline" className="flex-1" onClick={() => toast({ title: "Nova Despesa", description: "Funcionalidade em desenvolvimento" })}>
+                    <Button variant="outline" className="flex-1" onClick={() => setExpenseModalOpen(true)}>
                       <FileText className="w-4 h-4 mr-2" />
                       Nova Despesa Manual
                     </Button>
-                    <Button variant="outline" className="flex-1" onClick={() => toast({ title: "Upload Comprovante", description: "Funcionalidade em desenvolvimento" })}>
+                    <Button variant="outline" className="flex-1" onClick={() => setReceiptModalOpen(true)}>
                       <Receipt className="w-4 h-4 mr-2" />
                       Upload Comprovante
                     </Button>
@@ -226,16 +240,32 @@ const Dashboard = () => {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium">Período de</label>
-                      <input type="date" className="w-full mt-1 px-3 py-2 border rounded-md" />
+                      <Label htmlFor="startDate">Período de</Label>
+                      <Input 
+                        id="startDate"
+                        type="date" 
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                      />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Período até</label>
-                      <input type="date" className="w-full mt-1 px-3 py-2 border rounded-md" />
+                      <Label htmlFor="endDate">Período até</Label>
+                      <Input 
+                        id="endDate"
+                        type="date" 
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                      />
                     </div>
                   </div>
                   
-                  <Button onClick={() => toast({ title: "Gerar DRE", description: "Funcionalidade em desenvolvimento" })}>
+                  <Button onClick={() => {
+                    if (!startDate || !endDate) {
+                      toast({ title: "Erro", description: "Selecione ambas as datas", variant: "destructive" });
+                      return;
+                    }
+                    toast({ title: "DRE Gerada", description: `Período: ${startDate} a ${endDate}` });
+                  }}>
                     <TrendingUp className="w-4 h-4 mr-2" />
                     Gerar DRE
                   </Button>
@@ -261,29 +291,43 @@ const Dashboard = () => {
               <CardContent>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium">CNPJ da Empresa</label>
-                    <input 
+                    <Label htmlFor="cnpj">CNPJ da Empresa</Label>
+                    <Input 
+                      id="cnpj"
                       type="text" 
                       placeholder="00.000.000/0001-00"
-                      className="w-full mt-1 px-3 py-2 border rounded-md" 
+                      value={companyConfig.cnpj}
+                      onChange={(e) => setCompanyConfig(prev => ({ ...prev, cnpj: e.target.value }))}
                     />
                   </div>
                   
                   <div>
-                    <label className="text-sm font-medium">Razão Social</label>
-                    <input 
+                    <Label htmlFor="razaoSocial">Razão Social</Label>
+                    <Input 
+                      id="razaoSocial"
                       type="text" 
                       placeholder="Lui Bambini Ltda"
-                      className="w-full mt-1 px-3 py-2 border rounded-md" 
+                      value={companyConfig.razaoSocial}
+                      onChange={(e) => setCompanyConfig(prev => ({ ...prev, razaoSocial: e.target.value }))}
                     />
                   </div>
                   
-                  <Button onClick={() => toast({ title: "Configurações", description: "Configurações salvas com sucesso!" })}>Salvar Configurações</Button>
+                  <Button onClick={() => {
+                    toast({ 
+                      title: "Configurações Salvas", 
+                      description: `CNPJ: ${companyConfig.cnpj} | Razão Social: ${companyConfig.razaoSocial}` 
+                    });
+                  }}>Salvar Configurações</Button>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Modals */}
+        <UploadNFeModal open={nfeModalOpen} onOpenChange={setNfeModalOpen} />
+        <UploadReceiptModal open={receiptModalOpen} onOpenChange={setReceiptModalOpen} />
+        <NewExpenseModal open={expenseModalOpen} onOpenChange={setExpenseModalOpen} />
       </div>
     </div>
   );

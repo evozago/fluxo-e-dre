@@ -27,6 +27,10 @@ export const EntidadeManager = ({ onEntidadeChange }: EntidadeManagerProps) => {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingEntidade, setEditingEntidade] = useState<Entidade | null>(null);
+  const [sortField, setSortField] = useState<string>('nome');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [filteredEntidades, setFilteredEntidades] = useState<Entidade[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [formData, setFormData] = useState({
     nome: "",
     tipo: "PJ" as 'PJ' | 'PF',
@@ -38,6 +42,10 @@ export const EntidadeManager = ({ onEntidadeChange }: EntidadeManagerProps) => {
   useEffect(() => {
     loadEntidades();
   }, []);
+
+  useEffect(() => {
+    filterEntidades();
+  }, [entidades, searchTerm, sortField, sortDirection]);
 
   const loadEntidades = async () => {
     try {
@@ -58,6 +66,55 @@ export const EntidadeManager = ({ onEntidadeChange }: EntidadeManagerProps) => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const filterEntidades = () => {
+    let filtered = [...entidades];
+
+    if (searchTerm) {
+      filtered = filtered.filter(entidade => 
+        entidade.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (entidade.cnpj_cpf && entidade.cnpj_cpf.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    // Ordenação
+    filtered.sort((a, b) => {
+      let aValue = '';
+      let bValue = '';
+      
+      switch (sortField) {
+        case 'nome':
+          aValue = a.nome || '';
+          bValue = b.nome || '';
+          break;
+        case 'tipo':
+          aValue = a.tipo || '';
+          bValue = b.tipo || '';
+          break;
+        case 'cnpj_cpf':
+          aValue = a.cnpj_cpf || '';
+          bValue = b.cnpj_cpf || '';
+          break;
+        default:
+          aValue = a.nome || '';
+          bValue = b.nome || '';
+      }
+      
+      const comparison = aValue.localeCompare(bValue);
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    setFilteredEntidades(filtered);
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
     }
   };
 
@@ -308,10 +365,22 @@ export const EntidadeManager = ({ onEntidadeChange }: EntidadeManagerProps) => {
             </DialogContent>
           </Dialog>
         </div>
+        
+        <div className="flex gap-4 mt-4">
+          <div className="flex-1">
+            <Label htmlFor="search">Pesquisar</Label>
+            <Input
+              id="search"
+              placeholder="Nome ou CNPJ/CPF..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {entidades.map((entidade) => (
+          {filteredEntidades.map((entidade) => (
             <div
               key={entidade.id}
               className="flex items-center justify-between p-4 border rounded-lg"
@@ -375,9 +444,15 @@ export const EntidadeManager = ({ onEntidadeChange }: EntidadeManagerProps) => {
             </div>
           ))}
           
-          {entidades.length === 0 && (
+          {filteredEntidades.length === 0 && entidades.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               Nenhuma entidade cadastrada
+            </div>
+          )}
+          
+          {filteredEntidades.length === 0 && entidades.length > 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              Nenhuma entidade encontrada com os filtros aplicados
             </div>
           )}
         </div>

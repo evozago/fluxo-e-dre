@@ -32,6 +32,8 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
+  const [sortField, setSortField] = useState<string>('nome');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [formData, setFormData] = useState({
     nome: "",
     cnpj_cpf: "",
@@ -47,7 +49,7 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
 
   useEffect(() => {
     filterFornecedores();
-  }, [fornecedores, searchTerm]);
+  }, [fornecedores, searchTerm, sortField, sortDirection]);
 
   const loadFornecedores = async () => {
     try {
@@ -81,7 +83,47 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
       );
     }
 
+    // Ordenação
+    filtered.sort((a, b) => {
+      let aValue = '';
+      let bValue = '';
+      
+      switch (sortField) {
+        case 'nome':
+          aValue = a.nome || '';
+          bValue = b.nome || '';
+          break;
+        case 'cnpj_cpf':
+          aValue = a.cnpj_cpf || '';
+          bValue = b.cnpj_cpf || '';
+          break;
+        case 'email':
+          aValue = a.email || '';
+          bValue = b.email || '';
+          break;
+        case 'telefone':
+          aValue = a.telefone || '';
+          bValue = b.telefone || '';
+          break;
+        default:
+          aValue = a.nome || '';
+          bValue = b.nome || '';
+      }
+      
+      const comparison = aValue.localeCompare(bValue);
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
     setFilteredFornecedores(filtered);
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -362,10 +404,30 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>CNPJ/CPF</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Telefone</TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => handleSort('nome')}>
+                    Nome
+                    {sortField === 'nome' && (
+                      sortDirection === 'asc' ? ' ↑' : ' ↓'
+                    )}
+                  </TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => handleSort('cnpj_cpf')}>
+                    CNPJ/CPF
+                    {sortField === 'cnpj_cpf' && (
+                      sortDirection === 'asc' ? ' ↑' : ' ↓'
+                    )}
+                  </TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => handleSort('email')}>
+                    Email
+                    {sortField === 'email' && (
+                      sortDirection === 'asc' ? ' ↑' : ' ↓'
+                    )}
+                  </TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => handleSort('telefone')}>
+                    Telefone
+                    {sortField === 'telefone' && (
+                      sortDirection === 'asc' ? ' ↑' : ' ↓'
+                    )}
+                  </TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>

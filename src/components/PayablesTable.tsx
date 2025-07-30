@@ -775,7 +775,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                     onClick={() => handleSort('valor')}
                   >
                     <div className="flex items-center gap-1">
-                      Valor
+                      Valor da Parcela
                       {getSortIcon('valor')}
                     </div>
                   </TableHead>

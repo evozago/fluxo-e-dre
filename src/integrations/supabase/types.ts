@@ -16,42 +16,51 @@ export type Database = {
     Tables: {
       ap_installments: {
         Row: {
+          banco: string | null
           categoria: string | null
           created_at: string
           data_pagamento: string | null
           data_vencimento: string
           descricao: string
+          forma_pagamento: string | null
           fornecedor: string
           id: string
           nfe_id: string | null
+          numero_documento: string | null
           observacoes: string | null
           status: string
           updated_at: string
           valor: number
         }
         Insert: {
+          banco?: string | null
           categoria?: string | null
           created_at?: string
           data_pagamento?: string | null
           data_vencimento: string
           descricao: string
+          forma_pagamento?: string | null
           fornecedor: string
           id?: string
           nfe_id?: string | null
+          numero_documento?: string | null
           observacoes?: string | null
           status?: string
           updated_at?: string
           valor: number
         }
         Update: {
+          banco?: string | null
           categoria?: string | null
           created_at?: string
           data_pagamento?: string | null
           data_vencimento?: string
           descricao?: string
+          forma_pagamento?: string | null
           fornecedor?: string
           id?: string
           nfe_id?: string | null
+          numero_documento?: string | null
           observacoes?: string | null
           status?: string
           updated_at?: string

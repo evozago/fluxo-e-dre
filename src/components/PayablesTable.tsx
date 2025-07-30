@@ -21,6 +21,9 @@ interface Installment {
   categoria: string;
   observacoes: string | null;
   nfe_id: string | null;
+  forma_pagamento: string | null;
+  banco: string | null;
+  numero_documento: string | null;
 }
 
 interface PayablesTableProps {
@@ -38,6 +41,9 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentDate, setPaymentDate] = useState("");
   const [discount, setDiscount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [bank, setBank] = useState("");
+  const [documentNumber, setDocumentNumber] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -109,6 +115,9 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
           data_pagamento: paymentDate,
           status: 'pago',
           valor: finalAmount,
+          forma_pagamento: paymentMethod,
+          banco: bank,
+          numero_documento: documentNumber,
           observacoes: discount ? 
             `${installment.observacoes || ''} | Desconto: R$ ${discount}`.trim() : 
             installment.observacoes
@@ -128,6 +137,9 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
       setPaymentAmount("");
       setPaymentDate("");
       setDiscount("");
+      setPaymentMethod("");
+      setBank("");
+      setDocumentNumber("");
     } catch (error) {
       console.error('Erro ao registrar pagamento:', error);
       toast({
@@ -202,6 +214,50 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
       </Badge>
     );
   };
+
+  const CATEGORIAS = [
+    'Contabilidade',
+    'Aluguel',
+    'Fornecedores',
+    'Salários',
+    'Impostos',
+    'Energia',
+    'Telefone',
+    'Internet',
+    'Água',
+    'Manutenção',
+    'Marketing',
+    'Combustível',
+    'Outras Despesas',
+    'Geral'
+  ];
+
+  const FORMAS_PAGAMENTO = [
+    'Dinheiro',
+    'PIX',
+    'Transferência Bancária',
+    'Boleto Bancário',
+    'Cartão de Débito',
+    'Cartão de Crédito',
+    'Cheque'
+  ];
+
+  const BANCOS = [
+    'Banco do Brasil',
+    'Caixa Econômica Federal',
+    'Bradesco',
+    'Itaú',
+    'Santander',
+    'Nubank',
+    'Inter',
+    'C6 Bank',
+    'BTG Pactual',
+    'Sicoob',
+    'Sicredi',
+    'Banrisul',
+    'Safra',
+    'Outro'
+  ];
 
   if (loading) {
     return (
@@ -293,6 +349,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                   <TableHead>Vencimento</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Categoria</TableHead>
+                  <TableHead>Forma Pagto</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -307,6 +364,12 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                     <TableCell>{formatDate(installment.data_vencimento)}</TableCell>
                     <TableCell>{getStatusBadge(installment.status)}</TableCell>
                     <TableCell>{installment.categoria}</TableCell>
+                    <TableCell>
+                      {installment.forma_pagamento || '-'}
+                      {installment.banco && (
+                        <div className="text-xs text-muted-foreground">{installment.banco}</div>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Dialog>
@@ -378,14 +441,19 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                                 
                                 <div>
                                   <Label htmlFor="editCategoria">Categoria</Label>
-                                  <Input
+                                  <select
                                     id="editCategoria"
                                     value={editingInstallment.categoria}
                                     onChange={(e) => setEditingInstallment({
                                       ...editingInstallment,
                                       categoria: e.target.value
                                     })}
-                                  />
+                                    className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md"
+                                  >
+                                    {CATEGORIAS.map(cat => (
+                                      <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                  </select>
                                 </div>
                                 
                                 <div>
@@ -419,6 +487,9 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                                   setPaymentAmount(installment.valor.toString());
                                   setPaymentDate(new Date().toISOString().split('T')[0]);
                                   setDiscount("");
+                                  setPaymentMethod("");
+                                  setBank("");
+                                  setDocumentNumber("");
                                 }}
                               >
                                 <Check className="h-4 w-4" />
@@ -459,6 +530,46 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                                     placeholder="0.00"
                                     value={discount}
                                     onChange={(e) => setDiscount(e.target.value)}
+                                  />
+                                </div>
+                                
+                                <div>
+                                  <Label htmlFor="paymentMethod">Forma de Pagamento</Label>
+                                  <select
+                                    id="paymentMethod"
+                                    value={paymentMethod}
+                                    onChange={(e) => setPaymentMethod(e.target.value)}
+                                    className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md"
+                                  >
+                                    <option value="">Selecione...</option>
+                                    {FORMAS_PAGAMENTO.map(forma => (
+                                      <option key={forma} value={forma}>{forma}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                
+                                <div>
+                                  <Label htmlFor="bank">Banco</Label>
+                                  <select
+                                    id="bank"
+                                    value={bank}
+                                    onChange={(e) => setBank(e.target.value)}
+                                    className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md"
+                                  >
+                                    <option value="">Selecione...</option>
+                                    {BANCOS.map(banco => (
+                                      <option key={banco} value={banco}>{banco}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                
+                                <div>
+                                  <Label htmlFor="documentNumber">Número do Documento</Label>
+                                  <Input
+                                    id="documentNumber"
+                                    placeholder="Nº do cheque, comprovante, etc."
+                                    value={documentNumber}
+                                    onChange={(e) => setDocumentNumber(e.target.value)}
                                   />
                                 </div>
                                 

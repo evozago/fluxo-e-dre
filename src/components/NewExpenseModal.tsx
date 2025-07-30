@@ -109,11 +109,20 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="operacional">Despesas Operacionais</SelectItem>
-                <SelectItem value="administrativa">Despesas Administrativas</SelectItem>
-                <SelectItem value="financeira">Despesas Financeiras</SelectItem>
-                <SelectItem value="tributaria">Tributos</SelectItem>
-                <SelectItem value="pessoal">Folha de Pagamento</SelectItem>
+                <SelectItem value="Contabilidade">Contabilidade</SelectItem>
+                <SelectItem value="Aluguel">Aluguel</SelectItem>
+                <SelectItem value="Fornecedores">Fornecedores</SelectItem>
+                <SelectItem value="Salários">Salários</SelectItem>
+                <SelectItem value="Impostos">Impostos</SelectItem>
+                <SelectItem value="Energia">Energia</SelectItem>
+                <SelectItem value="Telefone">Telefone</SelectItem>
+                <SelectItem value="Internet">Internet</SelectItem>
+                <SelectItem value="Água">Água</SelectItem>
+                <SelectItem value="Manutenção">Manutenção</SelectItem>
+                <SelectItem value="Marketing">Marketing</SelectItem>
+                <SelectItem value="Combustível">Combustível</SelectItem>
+                <SelectItem value="Outras Despesas">Outras Despesas</SelectItem>
+                <SelectItem value="Geral">Geral</SelectItem>
               </SelectContent>
             </Select>
           </div>

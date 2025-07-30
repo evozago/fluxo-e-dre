@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, BarChart3, PieChart as PieChartIcon, TrendingUp } from "lucide-react";
+import { Calendar, BarChart3, PieChart as PieChartIcon, TrendingUp, Download, FileText, Filter } from "lucide-react";
+import { SpreadsheetTemplates } from "./SpreadsheetTemplates";
 
 interface ReportsProps {
   onDataChange?: () => void;
@@ -30,12 +31,16 @@ export const Reports = ({ onDataChange }: ReportsProps) => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedFornecedores, setSelectedFornecedores] = useState<string[]>([]);
   const [selectedEntidades, setSelectedEntidades] = useState<string[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
+  const [selectedFormasPagamento, setSelectedFormasPagamento] = useState<string[]>([]);
+  const [dateFilterType, setDateFilterType] = useState("custom");
   const [reportType, setReportType] = useState("categoria");
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [categorias, setCategorias] = useState<string[]>([]);
   const [fornecedores, setFornecedores] = useState<string[]>([]);
   const [entidades, setEntidades] = useState<{id: string, nome: string}[]>([]);
+  const [formasPagamento, setFormasPagamento] = useState<string[]>([]);
   const { toast } = useToast();
 
   const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1', '#d084d0', '#87d068', '#ffa726'];
@@ -71,9 +76,50 @@ export const Reports = ({ onDataChange }: ReportsProps) => {
         .eq('ativo', true);
       
       setEntidades(entidadesData || []);
+
+      // Carregar formas de pagamento únicas
+      const { data: formasPagamentoData } = await supabase
+        .from('ap_installments')
+        .select('forma_pagamento')
+        .not('forma_pagamento', 'is', null);
+      
+      const uniqueFormasPagamento = [...new Set(formasPagamentoData?.map(item => item.forma_pagamento) || [])];
+      setFormasPagamento(uniqueFormasPagamento);
     } catch (error) {
       console.error('Erro ao carregar dados dos filtros:', error);
     }
+  };
+
+  const setDateFilterQuick = (type: string) => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const day = today.getDate();
+
+    switch (type) {
+      case 'today':
+        const todayStr = today.toISOString().split('T')[0];
+        setStartDate(todayStr);
+        setEndDate(todayStr);
+        break;
+      case 'thisMonth':
+        setStartDate(new Date(year, month, 1).toISOString().split('T')[0]);
+        setEndDate(new Date(year, month + 1, 0).toISOString().split('T')[0]);
+        break;
+      case 'thisYear':
+        setStartDate(new Date(year, 0, 1).toISOString().split('T')[0]);
+        setEndDate(new Date(year, 11, 31).toISOString().split('T')[0]);
+        break;
+      case 'lastMonth':
+        setStartDate(new Date(year, month - 1, 1).toISOString().split('T')[0]);
+        setEndDate(new Date(year, month, 0).toISOString().split('T')[0]);
+        break;
+      case 'lastYear':
+        setStartDate(new Date(year - 1, 0, 1).toISOString().split('T')[0]);
+        setEndDate(new Date(year - 1, 11, 31).toISOString().split('T')[0]);
+        break;
+    }
+    setDateFilterType(type);
   };
 
   const generateReport = async () => {
@@ -112,6 +158,16 @@ export const Reports = ({ onDataChange }: ReportsProps) => {
       // Aplicar filtros de entidade
       if (selectedEntidades.length > 0) {
         query = query.in('entidade_id', selectedEntidades);
+      }
+
+      // Aplicar filtros de status
+      if (selectedStatus.length > 0) {
+        query = query.in('status', selectedStatus);
+      }
+
+      // Aplicar filtros de forma de pagamento
+      if (selectedFormasPagamento.length > 0) {
+        query = query.in('forma_pagamento', selectedFormasPagamento);
       }
 
       const { data, error } = await query;
@@ -215,6 +271,56 @@ export const Reports = ({ onDataChange }: ReportsProps) => {
     }
   };
 
+  const exportReport = (format: 'pdf' | 'xlsx' | 'csv') => {
+    if (!reportData.length) {
+      toast({
+        title: "Erro",
+        description: "Gere um relatório primeiro",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (format === 'csv') {
+      const csvData = reportData.map(item => {
+        const obj: any = {};
+        Object.keys(item).forEach(key => {
+          if (key === 'total') {
+            obj['Valor Total'] = formatCurrency(item[key] || 0);
+          } else if (key === 'count') {
+            obj['Quantidade'] = item[key];
+          } else {
+            obj[key] = item[key];
+          }
+        });
+        return obj;
+      });
+
+      const headers = Object.keys(csvData[0] || {});
+      const csvContent = [
+        headers.join(','),
+        ...csvData.map(row => headers.map(header => `"${row[header] || ''}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `relatorio-${reportType}-${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+
+      toast({
+        title: "Relatório Exportado",
+        description: `Relatório exportado em CSV com sucesso`
+      });
+    } else {
+      toast({
+        title: "Em Desenvolvimento",
+        description: `Exportação em ${format.toUpperCase()} será implementada em breve`,
+        variant: "destructive"
+      });
+    }
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -301,31 +407,53 @@ export const Reports = ({ onDataChange }: ReportsProps) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            Relatórios e Análises
+            Relatórios e Análises Avançadas
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            {/* Filtros de Data */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {/* Filtro de Período Rápido */}
             <div>
-              <Label htmlFor="startDate">Data Início</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
+              <Label htmlFor="quickDate">Período</Label>
+              <Select value={dateFilterType} onValueChange={setDateFilterQuick}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="today">Hoje</SelectItem>
+                  <SelectItem value="thisMonth">Este Mês</SelectItem>
+                  <SelectItem value="lastMonth">Mês Anterior</SelectItem>
+                  <SelectItem value="thisYear">Este Ano</SelectItem>
+                  <SelectItem value="lastYear">Ano Anterior</SelectItem>
+                  <SelectItem value="custom">Personalizado</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            
-            <div>
-              <Label htmlFor="endDate">Data Fim</Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
+
+            {/* Filtros de Data Personalizados */}
+            {dateFilterType === 'custom' && (
+              <>
+                <div>
+                  <Label htmlFor="startDate">Data Início</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="endDate">Data Fim</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
+              </>
+            )}
 
             {/* Tipo de Relatório */}
             <div>
@@ -382,6 +510,44 @@ export const Reports = ({ onDataChange }: ReportsProps) => {
               </Select>
             </div>
 
+            {/* Filtro de Status */}
+            <div>
+              <Label htmlFor="statusFilter">Filtrar Status</Label>
+              <Select 
+                value={selectedStatus.length > 0 ? selectedStatus.join(',') : 'all'} 
+                onValueChange={(value) => setSelectedStatus(value === 'all' ? [] : value.split(','))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="aberto">Em Aberto</SelectItem>
+                  <SelectItem value="vencido">Vencido</SelectItem>
+                  <SelectItem value="pago">Pago</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filtro de Forma de Pagamento */}
+            <div>
+              <Label htmlFor="formaPagamentoFilter">Forma de Pagamento</Label>
+              <Select 
+                value={selectedFormasPagamento.length > 0 ? selectedFormasPagamento.join(',') : 'all'} 
+                onValueChange={(value) => setSelectedFormasPagamento(value === 'all' ? [] : value.split(','))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas as formas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as formas</SelectItem>
+                  {formasPagamento.map(forma => (
+                    <SelectItem key={forma} value={forma}>{forma}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Botão Gerar Relatório */}
             <div className="flex items-end">
               <Button onClick={generateReport} disabled={loading} className="w-full">
@@ -396,7 +562,25 @@ export const Reports = ({ onDataChange }: ReportsProps) => {
       {/* Gráficos */}
       <Card>
         <CardHeader>
-          <CardTitle>Visualização dos Dados</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Visualização dos Dados</CardTitle>
+            {reportData.length > 0 && (
+              <div className="flex gap-2">
+                <Button onClick={() => exportReport('csv')} variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" />
+                  CSV
+                </Button>
+                <Button onClick={() => exportReport('xlsx')} variant="outline" size="sm">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Excel
+                </Button>
+                <Button onClick={() => exportReport('pdf')} variant="outline" size="sm">
+                  <FileText className="h-4 w-4 mr-2" />
+                  PDF
+                </Button>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {renderChart()}
@@ -438,6 +622,9 @@ export const Reports = ({ onDataChange }: ReportsProps) => {
           </CardContent>
         </Card>
       )}
+
+      {/* Modelos de Planilha */}
+      <SpreadsheetTemplates />
     </div>
   );
 };

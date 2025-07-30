@@ -236,6 +236,53 @@ export type Database = {
         }
         Relationships: []
       }
+      representantes_contatos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          email: string
+          fornecedor_id: string
+          id: string
+          marcas: string | null
+          nome_representante: string
+          observacoes: string | null
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          email: string
+          fornecedor_id: string
+          id?: string
+          marcas?: string | null
+          nome_representante: string
+          observacoes?: string | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          email?: string
+          fornecedor_id?: string
+          id?: string
+          marcas?: string | null
+          nome_representante?: string
+          observacoes?: string | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "representantes_contatos_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

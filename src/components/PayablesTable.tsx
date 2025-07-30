@@ -25,6 +25,12 @@ interface Installment {
   forma_pagamento: string | null;
   banco: string | null;
   numero_documento: string | null;
+  entidade_id: string;
+  entidades?: {
+    id: string;
+    nome: string;
+    tipo: string;
+  };
 }
 
 interface PayablesTableProps {
@@ -87,7 +93,10 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
       setLoading(true);
       const { data, error } = await supabase
         .from('ap_installments')
-        .select('*')
+        .select(`
+          *,
+          entidades (id, nome, tipo)
+        `)
         .order('data_vencimento', { ascending: true });
 
       if (error) throw error;
@@ -275,7 +284,8 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
             banco: row.Banco || null,
             numero_documento: row['Número Documento'] || null,
             observacoes: row.Observações || null,
-            status: 'aberto'
+            status: 'aberto',
+            entidade_id: (await supabase.from('entidades').select('id').limit(1).single())?.data?.id || ''
           });
 
         if (error) {
@@ -563,6 +573,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                   <TableHead>Vencimento</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Categoria</TableHead>
+                  <TableHead>Entidade</TableHead>
                   <TableHead>Forma Pagto</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
@@ -584,6 +595,14 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                     <TableCell>{formatDate(installment.data_vencimento)}</TableCell>
                     <TableCell>{getStatusBadge(installment.status)}</TableCell>
                     <TableCell>{installment.categoria}</TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {installment.entidades?.nome || 'N/A'}
+                        <div className="text-xs text-muted-foreground">
+                          {installment.entidades?.tipo === 'PJ' ? 'Pessoa Jurídica' : 'Pessoa Física'}
+                        </div>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       {installment.forma_pagamento || '-'}
                       {installment.banco && (

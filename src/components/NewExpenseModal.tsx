@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NewExpenseModalProps {
   open: boolean;
@@ -20,12 +21,25 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
     value: "",
     dueDate: "",
     category: "",
-    recurring: false
+    recurring: false,
+    entidadeId: ""
   });
+  const [entidades, setEntidades] = useState<{id: string, nome: string, tipo: string}[]>([]);
   const { toast } = useToast();
 
+  useEffect(() => {
+    const loadEntidades = async () => {
+      const { data } = await supabase
+        .from('entidades')
+        .select('id, nome, tipo')
+        .eq('ativo', true);
+      setEntidades(data || []);
+    };
+    if (open) loadEntidades();
+  }, [open]);
+
   const handleSubmit = () => {
-    if (!formData.description || !formData.supplier || !formData.value || !formData.dueDate) {
+    if (!formData.description || !formData.supplier || !formData.value || !formData.dueDate || !formData.entidadeId) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios",
@@ -45,7 +59,8 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
       value: "",
       dueDate: "",
       category: "",
-      recurring: false
+      recurring: false,
+      entidadeId: ""
     });
     onOpenChange(false);
   };
@@ -100,6 +115,22 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
               value={formData.dueDate}
               onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
             />
+          </div>
+
+          <div>
+            <Label htmlFor="entidade">Entidade *</Label>
+            <Select onValueChange={(value) => setFormData(prev => ({ ...prev, entidadeId: value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a entidade" />
+              </SelectTrigger>
+              <SelectContent>
+                {entidades.map(entidade => (
+                  <SelectItem key={entidade.id} value={entidade.id}>
+                    {entidade.nome} ({entidade.tipo === 'PJ' ? 'Pessoa Jurídica' : 'Pessoa Física'})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>

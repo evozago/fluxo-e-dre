@@ -22,6 +22,7 @@ export type Database = {
           data_pagamento: string | null
           data_vencimento: string
           descricao: string
+          entidade_id: string
           forma_pagamento: string | null
           fornecedor: string
           id: string
@@ -39,6 +40,7 @@ export type Database = {
           data_pagamento?: string | null
           data_vencimento: string
           descricao: string
+          entidade_id: string
           forma_pagamento?: string | null
           fornecedor: string
           id?: string
@@ -56,6 +58,7 @@ export type Database = {
           data_pagamento?: string | null
           data_vencimento?: string
           descricao?: string
+          entidade_id?: string
           forma_pagamento?: string | null
           fornecedor?: string
           id?: string
@@ -68,6 +71,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "ap_installments_entidade_id_fkey"
+            columns: ["entidade_id"]
+            isOneToOne: false
+            referencedRelation: "entidades"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ap_installments_nfe_id_fkey"
             columns: ["nfe_id"]
             isOneToOne: false
@@ -75,6 +85,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      entidades: {
+        Row: {
+          ativo: boolean
+          cnpj_cpf: string | null
+          created_at: string
+          id: string
+          nome: string
+          razao_social: string | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cnpj_cpf?: string | null
+          created_at?: string
+          id?: string
+          nome: string
+          razao_social?: string | null
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cnpj_cpf?: string | null
+          created_at?: string
+          id?: string
+          nome?: string
+          razao_social?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       nfe_data: {
         Row: {

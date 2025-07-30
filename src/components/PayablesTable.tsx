@@ -122,7 +122,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
 
   useEffect(() => {
     filterInstallments();
-  }, [installments, searchTerm, dateFilter, statusFilter]);
+  }, [installments, searchTerm, dateFilter, statusFilter, sortField, sortDirection]);
 
   const loadInstallments = async () => {
     try {

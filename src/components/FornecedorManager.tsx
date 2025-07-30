@@ -53,12 +53,12 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('fornecedores')
+        .from('fornecedores' as any)
         .select('*')
         .order('nome', { ascending: true });
 
       if (error) throw error;
-      setFornecedores(data || []);
+      setFornecedores((data as any[]) || []);
     } catch (error) {
       console.error('Erro ao carregar fornecedores:', error);
       toast({
@@ -100,7 +100,7 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
       if (editingFornecedor) {
         // Atualizar fornecedor existente
         const { error } = await supabase
-          .from('fornecedores')
+          .from('fornecedores' as any)
           .update({
             nome: formData.nome,
             cnpj_cpf: formData.cnpj_cpf || null,
@@ -120,7 +120,7 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
       } else {
         // Criar novo fornecedor
         const { error } = await supabase
-          .from('fornecedores')
+          .from('fornecedores' as any)
           .insert({
             nome: formData.nome,
             cnpj_cpf: formData.cnpj_cpf || null,
@@ -176,7 +176,7 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
 
     try {
       const { error } = await supabase
-        .from('fornecedores')
+        .from('fornecedores' as any)
         .update({ ativo: false })
         .eq('id', id);
 

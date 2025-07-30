@@ -15,6 +15,7 @@ import { PayablesTable } from "@/components/PayablesTable";
 import { ConfigurationSettings } from "@/components/ConfigurationSettings";
 import { Reports } from "@/components/Reports";
 import { EntidadeManager } from "@/components/EntidadeManager";
+import { FornecedorManager } from "@/components/FornecedorManager";
 
 interface DashboardStats {
   totalAberto: number;
@@ -191,8 +192,9 @@ const Dashboard = () => {
 
         {/* Main Content */}
         <Tabs defaultValue="contas" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="contas">Contas a Pagar</TabsTrigger>
+            <TabsTrigger value="fornecedores">Fornecedores</TabsTrigger>
             <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
             <TabsTrigger value="entidades">Entidades</TabsTrigger>
             <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
@@ -228,6 +230,10 @@ const Dashboard = () => {
             </Card>
             
             <PayablesTable onDataChange={loadDashboardStats} />
+          </TabsContent>
+
+          <TabsContent value="fornecedores" className="space-y-4">
+            <FornecedorManager onFornecedorChange={loadDashboardStats} />
           </TabsContent>
 
           <TabsContent value="relatorios" className="space-y-4">

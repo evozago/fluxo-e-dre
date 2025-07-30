@@ -66,8 +66,13 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
     forma_pagamento: "",
     banco: "",
     valor_adjustment: "",
-    data_vencimento: ""
+    data_vencimento: "",
+    entidade_id: "",
+    descricao: "",
+    fornecedor: ""
   });
+  const [entidades, setEntidades] = useState<{id: string, nome: string, tipo: string}[]>([]);
+  const [fornecedores, setFornecedores] = useState<{id: string, nome: string}[]>([]);
   const { toast } = useToast();
 
   const CATEGORIAS = [
@@ -89,6 +94,8 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
 
   useEffect(() => {
     loadInstallments();
+    loadEntidades();
+    loadFornecedores();
   }, []);
 
   useEffect(() => {
@@ -117,6 +124,34 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadEntidades = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('entidades')
+        .select('id, nome, tipo')
+        .eq('ativo', true);
+      
+      if (error) throw error;
+      setEntidades(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar entidades:', error);
+    }
+  };
+
+  const loadFornecedores = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('fornecedores' as any)
+        .select('id, nome')
+        .eq('ativo', true);
+      
+      if (error) throw error;
+      setFornecedores((data as any[]) || []);
+    } catch (error) {
+      console.error('Erro ao carregar fornecedores:', error);
     }
   };
 
@@ -161,6 +196,9 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
           if (bulkEditData.forma_pagamento) updates.forma_pagamento = bulkEditData.forma_pagamento;
           if (bulkEditData.banco) updates.banco = bulkEditData.banco;
           if (bulkEditData.data_vencimento) updates.data_vencimento = bulkEditData.data_vencimento;
+          if (bulkEditData.entidade_id) updates.entidade_id = bulkEditData.entidade_id;
+          if (bulkEditData.descricao) updates.descricao = bulkEditData.descricao;
+          if (bulkEditData.fornecedor) updates.fornecedor = bulkEditData.fornecedor;
           
           if (bulkEditData.valor_adjustment) {
             const adjustment = bulkEditData.valor_adjustment;
@@ -196,7 +234,10 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
         forma_pagamento: "",
         banco: "",
         valor_adjustment: "",
-        data_vencimento: ""
+        data_vencimento: "",
+        entidade_id: "",
+        descricao: "",
+        fornecedor: ""
       });
     } catch (error) {
       console.error('Erro na edição em massa:', error);
@@ -404,7 +445,8 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
           valor: installment.valor,
           data_vencimento: installment.data_vencimento,
           categoria: installment.categoria,
-          observacoes: installment.observacoes
+          observacoes: installment.observacoes,
+          entidade_id: installment.entidade_id
         })
         .eq('id', installment.id);
 
@@ -740,26 +782,28 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                                       data_vencimento: e.target.value
                                     })}
                                   />
-                                </div>
-                                
-                                <div>
-                                  <Label htmlFor="editCategoria">Categoria</Label>
-                                  <select
-                                    id="editCategoria"
-                                    value={editingInstallment.categoria}
-                                    onChange={(e) => setEditingInstallment({
-                                      ...editingInstallment,
-                                      categoria: e.target.value
-                                    })}
-                                    className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md"
-                                  >
-                                    {CATEGORIAS.map(cat => (
-                                      <option key={cat} value={cat}>{cat}</option>
-                                    ))}
-                                  </select>
-                                </div>
-                                
-                                <div>
+                                 </div>
+                                 
+                                 <div>
+                                   <Label htmlFor="editEntidade">Entidade</Label>
+                                   <select
+                                     id="editEntidade"
+                                     value={editingInstallment.entidade_id}
+                                     onChange={(e) => setEditingInstallment({
+                                       ...editingInstallment,
+                                       entidade_id: e.target.value
+                                     })}
+                                     className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md"
+                                   >
+                                     {entidades.map(entidade => (
+                                       <option key={entidade.id} value={entidade.id}>
+                                         {entidade.nome} ({entidade.tipo})
+                                       </option>
+                                     ))}
+                                   </select>
+                                 </div>
+                                 
+                                 <div>
                                   <Label htmlFor="editObservacoes">Observações</Label>
                                   <Input
                                     id="editObservacoes"
@@ -967,6 +1011,43 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
             </DialogHeader>
             <div className="space-y-4">
               <div>
+                <Label htmlFor="bulkEntidade">Entidade</Label>
+                <select
+                  id="bulkEntidade"
+                  value={bulkEditData.entidade_id}
+                  onChange={(e) => setBulkEditData({...bulkEditData, entidade_id: e.target.value})}
+                  className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md"
+                >
+                  <option value="">Não alterar</option>
+                  {entidades.map(entidade => (
+                    <option key={entidade.id} value={entidade.id}>
+                      {entidade.nome} ({entidade.tipo})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <Label htmlFor="bulkFornecedor">Fornecedor</Label>
+                <Input
+                  id="bulkFornecedor"
+                  placeholder="Nome do fornecedor"
+                  value={bulkEditData.fornecedor}
+                  onChange={(e) => setBulkEditData({...bulkEditData, fornecedor: e.target.value})}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="bulkDescricao">Descrição</Label>
+                <Input
+                  id="bulkDescricao"
+                  placeholder="Nova descrição"
+                  value={bulkEditData.descricao}
+                  onChange={(e) => setBulkEditData({...bulkEditData, descricao: e.target.value})}
+                />
+              </div>
+              
+               <div>
                 <Label htmlFor="bulkCategoria">Categoria</Label>
                 <select
                   id="bulkCategoria"

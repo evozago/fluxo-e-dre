@@ -158,13 +158,16 @@ Deno.serve(async (req) => {
     const duplicatas = xmlContent.match(dupRegex) || []
     
     const installments = []
+    const totalParcelas = duplicatas.length > 0 ? duplicatas.length : 1
     
     if (duplicatas.length > 0) {
       // Process each duplicata
-      for (const dup of duplicatas) {
+      for (let i = 0; i < duplicatas.length; i++) {
+        const dup = duplicatas[i]
         const nDup = extractValue(dup, 'nDup')
         const dVenc = extractValue(dup, 'dVenc')
         const vDup = parseFloat(extractValue(dup, 'vDup') || '0')
+        const numeroParcela = i + 1
         
         if (dVenc && vDup > 0) {
           // Check if installment already exists for this NFe
@@ -172,7 +175,7 @@ Deno.serve(async (req) => {
             .from('ap_installments')
             .select('id')
             .eq('nfe_id', nfeData.id)
-            .eq('descricao', `NFe ${numeroNfe} - Parcela ${nDup} - ${nomeEmitente}`)
+            .eq('descricao', `NFe ${numeroNfe} - Parcela ${String(numeroParcela).padStart(3, '0')} - ${nomeEmitente}`)
             .maybeSingle()
           
           if (existingInstallment) {
@@ -198,12 +201,16 @@ Deno.serve(async (req) => {
             .from('ap_installments')
             .insert({
               nfe_id: nfeData.id,
-              descricao: `NFe ${numeroNfe} - Parcela ${nDup} - ${nomeEmitente}`,
+              descricao: `NFe ${numeroNfe} - Parcela ${String(numeroParcela).padStart(3, '0')} - ${nomeEmitente}`,
               fornecedor: nomeEmitente,
               valor: vDup,
+              valor_total_titulo: valorTotal,
               data_vencimento: dVenc,
               categoria: 'NFe',
-              entidade_id: entidadeId
+              entidade_id: entidadeId,
+              numero_documento: numeroNfe,
+              numero_parcela: numeroParcela,
+              total_parcelas: totalParcelas
             })
             .select()
             .single()
@@ -253,9 +260,13 @@ Deno.serve(async (req) => {
             descricao: `NFe ${numeroNfe} - ${nomeEmitente}`,
             fornecedor: nomeEmitente,
             valor: valorTotal,
+            valor_total_titulo: valorTotal,
             data_vencimento: vencimento.toISOString().split('T')[0],
             categoria: 'NFe',
-            entidade_id: entidadeId
+            entidade_id: entidadeId,
+            numero_documento: numeroNfe,
+            numero_parcela: 1,
+            total_parcelas: 1
           })
           .select()
           .single()

@@ -7,9 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Edit, Check, DollarSign, Calendar, Download, Upload, Users } from "lucide-react";
+import { Search, Edit, Check, DollarSign, Calendar, Download, Upload, Users, Paperclip, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { UploadReceiptModal } from "./UploadReceiptModal";
+import { BankStatementImport } from "./BankStatementImport";
 
 interface Installment {
   id: string;
@@ -26,6 +28,7 @@ interface Installment {
   banco: string | null;
   numero_documento: string | null;
   entidade_id: string;
+  comprovante_path: string | null;
   entidades?: {
     id: string;
     nome: string;
@@ -52,8 +55,12 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
   const [bank, setBank] = useState("");
   const [documentNumber, setDocumentNumber] = useState("");
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [lastSelectedIndex, setLastSelectedIndex] = useState<number>(-1);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [bankImportOpen, setBankImportOpen] = useState(false);
+  const [selectedInstallmentForReceipt, setSelectedInstallmentForReceipt] = useState<string>("");
   const [bulkEditData, setBulkEditData] = useState({
     categoria: "",
     forma_pagamento: "",
@@ -100,7 +107,12 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
         .order('data_vencimento', { ascending: true });
 
       if (error) throw error;
-      setInstallments(data || []);
+      // Mapear dados para incluir comprovante_path com valor padrão
+      const mappedData = (data || []).map(item => ({
+        ...item,
+        comprovante_path: item.comprovante_path || null
+      }));
+      setInstallments(mappedData);
     } catch (error) {
       console.error('Erro ao carregar parcelas:', error);
       toast({

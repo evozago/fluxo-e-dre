@@ -259,6 +259,27 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
     'Outro'
   ];
 
+  const calculateTotals = () => {
+    const aberto = filteredInstallments
+      .filter(item => item.status === 'aberto')
+      .reduce((sum, item) => sum + Number(item.valor), 0);
+    
+    const vencido = filteredInstallments
+      .filter(item => item.status === 'vencido')
+      .reduce((sum, item) => sum + Number(item.valor), 0);
+    
+    const pago = filteredInstallments
+      .filter(item => item.status === 'pago')
+      .reduce((sum, item) => sum + Number(item.valor), 0);
+    
+    const total = filteredInstallments
+      .reduce((sum, item) => sum + Number(item.valor), 0);
+    
+    return { aberto, vencido, pago, total };
+  };
+
+  const totals = calculateTotals();
+
   if (loading) {
     return (
       <Card>
@@ -602,6 +623,59 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
             </Table>
           </div>
         )}
+        
+        {/* Totalizador */}
+        <div className="mt-6 pt-4 border-t">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="bg-orange-50 border-orange-200">
+              <CardContent className="p-4">
+                <div className="text-sm font-medium text-orange-700">Em Aberto</div>
+                <div className="text-lg font-bold text-orange-800">
+                  {formatCurrency(totals.aberto)}
+                </div>
+                <div className="text-xs text-orange-600">
+                  {filteredInstallments.filter(i => i.status === 'aberto').length} parcelas
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-red-50 border-red-200">
+              <CardContent className="p-4">
+                <div className="text-sm font-medium text-red-700">Vencido</div>
+                <div className="text-lg font-bold text-red-800">
+                  {formatCurrency(totals.vencido)}
+                </div>
+                <div className="text-xs text-red-600">
+                  {filteredInstallments.filter(i => i.status === 'vencido').length} parcelas
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-green-50 border-green-200">
+              <CardContent className="p-4">
+                <div className="text-sm font-medium text-green-700">Pago</div>
+                <div className="text-lg font-bold text-green-800">
+                  {formatCurrency(totals.pago)}
+                </div>
+                <div className="text-xs text-green-600">
+                  {filteredInstallments.filter(i => i.status === 'pago').length} parcelas
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-blue-50 border-blue-200">
+              <CardContent className="p-4">
+                <div className="text-sm font-medium text-blue-700">Total Geral</div>
+                <div className="text-lg font-bold text-blue-800">
+                  {formatCurrency(totals.total)}
+                </div>
+                <div className="text-xs text-blue-600">
+                  {filteredInstallments.length} parcelas
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

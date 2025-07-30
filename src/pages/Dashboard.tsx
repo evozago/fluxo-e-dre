@@ -12,6 +12,7 @@ import { UploadNFeModal } from "@/components/UploadNFeModal";
 import { UploadReceiptModal } from "@/components/UploadReceiptModal";
 import { NewExpenseModal } from "@/components/NewExpenseModal";
 import { PayablesTable } from "@/components/PayablesTable";
+import { ConfigurationSettings } from "@/components/ConfigurationSettings";
 
 interface DashboardStats {
   totalAberto: number;
@@ -188,10 +189,11 @@ const Dashboard = () => {
 
         {/* Main Content */}
         <Tabs defaultValue="contas" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="contas">Contas a Pagar</TabsTrigger>
             <TabsTrigger value="dre">DRE</TabsTrigger>
             <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
+            <TabsTrigger value="parametros">Parâmetros</TabsTrigger>
           </TabsList>
 
           <TabsContent value="contas" className="space-y-4">
@@ -318,6 +320,10 @@ const Dashboard = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="parametros" className="space-y-4">
+            <ConfigurationSettings onConfigChange={loadDashboardStats} />
           </TabsContent>
         </Tabs>
 

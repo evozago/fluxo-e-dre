@@ -119,6 +119,19 @@ Deno.serve(async (req) => {
         const vDup = parseFloat(extractValue(dup, 'vDup') || '0')
         
         if (dVenc && vDup > 0) {
+          // Get default entity (first one found) to comply with NOT NULL constraint
+          const { data: entities } = await supabase
+            .from('entidades')
+            .select('id')
+            .eq('ativo', true)
+            .limit(1)
+          
+          const entidadeId = entities?.[0]?.id
+          
+          if (!entidadeId) {
+            throw new Error('Nenhuma entidade ativa encontrada. É necessário ter pelo menos uma entidade cadastrada.')
+          }
+
           const { data: apData, error: apError } = await supabase
             .from('ap_installments')
             .insert({
@@ -127,7 +140,8 @@ Deno.serve(async (req) => {
               fornecedor: nomeEmitente,
               valor: vDup,
               data_vencimento: dVenc,
-              categoria: 'NFe'
+              categoria: 'NFe',
+              entidade_id: entidadeId
             })
             .select()
             .single()
@@ -145,6 +159,19 @@ Deno.serve(async (req) => {
       const vencimento = new Date()
       vencimento.setDate(vencimento.getDate() + 30)
 
+      // Get default entity (first one found) to comply with NOT NULL constraint
+      const { data: entities } = await supabase
+        .from('entidades')
+        .select('id')
+        .eq('ativo', true)
+        .limit(1)
+      
+      const entidadeId = entities?.[0]?.id
+      
+      if (!entidadeId) {
+        throw new Error('Nenhuma entidade ativa encontrada. É necessário ter pelo menos uma entidade cadastrada.')
+      }
+
       const { data: apData, error: apError } = await supabase
         .from('ap_installments')
         .insert({
@@ -153,7 +180,8 @@ Deno.serve(async (req) => {
           fornecedor: nomeEmitente,
           valor: valorTotal,
           data_vencimento: vencimento.toISOString().split('T')[0],
-          categoria: 'NFe'
+          categoria: 'NFe',
+          entidade_id: entidadeId
         })
         .select()
         .single()

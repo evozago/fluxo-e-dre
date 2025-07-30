@@ -12,10 +12,11 @@ import { UploadNFeModal } from "@/components/UploadNFeModal";
 import { UploadReceiptModal } from "@/components/UploadReceiptModal";
 import { NewExpenseModal } from "@/components/NewExpenseModal";
 import { PayablesTable } from "@/components/PayablesTable";
-import { ConfigurationSettings } from "@/components/ConfigurationSettings";
+import { FornecedorManager } from "@/components/FornecedorManager";
 import { Reports } from "@/components/Reports";
 import { EntidadeManager } from "@/components/EntidadeManager";
-import { FornecedorManager } from "@/components/FornecedorManager";
+import { ConfigurationSettings } from "@/components/ConfigurationSettings";
+import { SalesSystem } from "@/components/SalesSystem";
 
 interface DashboardStats {
   totalAberto: number;
@@ -192,11 +193,12 @@ const Dashboard = () => {
 
         {/* Main Content */}
         <Tabs defaultValue="contas" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="contas">Contas a Pagar</TabsTrigger>
             <TabsTrigger value="fornecedores">Fornecedores</TabsTrigger>
             <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
             <TabsTrigger value="entidades">Entidades</TabsTrigger>
+            <TabsTrigger value="vendas">Vendas</TabsTrigger>
             <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
             <TabsTrigger value="parametros">Parâmetros</TabsTrigger>
           </TabsList>
@@ -337,6 +339,10 @@ const Dashboard = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="vendas" className="space-y-4">
+            <SalesSystem onDataChange={loadDashboardStats} />
           </TabsContent>
 
           <TabsContent value="parametros" className="space-y-4">

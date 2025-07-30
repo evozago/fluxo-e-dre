@@ -107,6 +107,33 @@ export type Database = {
           },
         ]
       }
+      config_vendas: {
+        Row: {
+          created_at: string
+          dias_uteis_considerados: string | null
+          id: string
+          meta_loja_mensal: number | null
+          observacoes: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dias_uteis_considerados?: string | null
+          id?: string
+          meta_loja_mensal?: number | null
+          observacoes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dias_uteis_considerados?: string | null
+          id?: string
+          meta_loja_mensal?: number | null
+          observacoes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       entidades: {
         Row: {
           ativo: boolean
@@ -175,6 +202,74 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      meios_pagamento_vendas: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      metas_mensais: {
+        Row: {
+          ano: number
+          comissao_calculada: number | null
+          created_at: string
+          id: string
+          mes: number
+          meta_valor: number
+          supermeta_valor: number | null
+          updated_at: string
+          vendas_realizadas: number | null
+          vendedora_id: string
+        }
+        Insert: {
+          ano: number
+          comissao_calculada?: number | null
+          created_at?: string
+          id?: string
+          mes: number
+          meta_valor: number
+          supermeta_valor?: number | null
+          updated_at?: string
+          vendas_realizadas?: number | null
+          vendedora_id: string
+        }
+        Update: {
+          ano?: number
+          comissao_calculada?: number | null
+          created_at?: string
+          id?: string
+          mes?: number
+          meta_valor?: number
+          supermeta_valor?: number | null
+          updated_at?: string
+          vendas_realizadas?: number | null
+          vendedora_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metas_mensais_vendedora_id_fkey"
+            columns: ["vendedora_id"]
+            isOneToOne: false
+            referencedRelation: "vendedoras"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       nfe_data: {
         Row: {
@@ -282,6 +377,89 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vendas: {
+        Row: {
+          cliente_nome: string | null
+          created_at: string
+          data_venda: string
+          forma_pagamento: string | null
+          id: string
+          observacoes: string | null
+          updated_at: string
+          valor_venda: number
+          vendedora_id: string
+        }
+        Insert: {
+          cliente_nome?: string | null
+          created_at?: string
+          data_venda: string
+          forma_pagamento?: string | null
+          id?: string
+          observacoes?: string | null
+          updated_at?: string
+          valor_venda: number
+          vendedora_id: string
+        }
+        Update: {
+          cliente_nome?: string | null
+          created_at?: string
+          data_venda?: string
+          forma_pagamento?: string | null
+          id?: string
+          observacoes?: string | null
+          updated_at?: string
+          valor_venda?: number
+          vendedora_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendas_vendedora_id_fkey"
+            columns: ["vendedora_id"]
+            isOneToOne: false
+            referencedRelation: "vendedoras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendedoras: {
+        Row: {
+          ativo: boolean
+          comissao_padrao: number | null
+          comissao_supermeta: number | null
+          created_at: string
+          email: string | null
+          id: string
+          meta_mensal: number | null
+          nome: string
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          comissao_padrao?: number | null
+          comissao_supermeta?: number | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          meta_mensal?: number | null
+          nome: string
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          comissao_padrao?: number | null
+          comissao_supermeta?: number | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          meta_mensal?: number | null
+          nome?: string
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {

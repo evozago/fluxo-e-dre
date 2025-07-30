@@ -779,9 +779,33 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                       {getSortIcon('valor')}
                     </div>
                   </TableHead>
-                  <TableHead>Valor Total</TableHead>
-                  <TableHead>Parcela</TableHead>
-                  <TableHead>Nº Doc/NFe</TableHead>
+                   <TableHead 
+                     className="cursor-pointer hover:bg-muted/50" 
+                     onClick={() => handleSort('valor_total_titulo')}
+                   >
+                     <div className="flex items-center gap-1">
+                       Valor Total
+                       {getSortIcon('valor_total_titulo')}
+                     </div>
+                   </TableHead>
+                   <TableHead 
+                     className="cursor-pointer hover:bg-muted/50" 
+                     onClick={() => handleSort('numero_parcela')}
+                   >
+                     <div className="flex items-center gap-1">
+                       Parcela
+                       {getSortIcon('numero_parcela')}
+                     </div>
+                   </TableHead>
+                   <TableHead 
+                     className="cursor-pointer hover:bg-muted/50" 
+                     onClick={() => handleSort('numero_documento')}
+                   >
+                     <div className="flex items-center gap-1">
+                       Nº Doc/NFe
+                       {getSortIcon('numero_documento')}
+                     </div>
+                   </TableHead>
                   <TableHead 
                     className="cursor-pointer hover:bg-muted/50" 
                     onClick={() => handleSort('data_vencimento')}
@@ -809,8 +833,24 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                       {getSortIcon('categoria')}
                     </div>
                   </TableHead>
-                  <TableHead>Entidade</TableHead>
-                  <TableHead>Forma Pagto</TableHead>
+                   <TableHead 
+                     className="cursor-pointer hover:bg-muted/50" 
+                     onClick={() => handleSort('entidade_id')}
+                   >
+                     <div className="flex items-center gap-1">
+                       Entidade
+                       {getSortIcon('entidade_id')}
+                     </div>
+                   </TableHead>
+                   <TableHead 
+                     className="cursor-pointer hover:bg-muted/50" 
+                     onClick={() => handleSort('forma_pagamento')}
+                   >
+                     <div className="flex items-center gap-1">
+                       Forma Pagto
+                       {getSortIcon('forma_pagamento')}
+                     </div>
+                   </TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>

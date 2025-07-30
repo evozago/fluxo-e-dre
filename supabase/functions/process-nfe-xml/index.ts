@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
     
     // Parse XML to extract NFe data
     const parser = new DOMParser()
-    const xmlDoc = parser.parseFromString(xmlContent, 'text/xml')
+    const xmlDoc = parser.parseFromString(xmlContent, 'application/xml')
 
     // Extract data from XML structure
     const infNFe = xmlDoc.querySelector('infNFe')

@@ -364,7 +364,7 @@ export const VendasDashboard = ({ onDataChange }: VendasDashboardProps) => {
               </div>
               
               <div>
-                <Label htmlFor="valor_venda">Valor da Venda *</Label>
+                <Label htmlFor="valor_venda">Valor Vendido *</Label>
                 <Input
                   id="valor_venda"
                   type="number"

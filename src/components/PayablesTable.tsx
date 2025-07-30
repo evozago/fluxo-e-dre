@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Search, Edit, Check, DollarSign, Calendar } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Search, Edit, Check, DollarSign, Calendar, Download, Upload, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -44,7 +45,34 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
   const [paymentMethod, setPaymentMethod] = useState("");
   const [bank, setBank] = useState("");
   const [documentNumber, setDocumentNumber] = useState("");
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [bulkEditData, setBulkEditData] = useState({
+    categoria: "",
+    forma_pagamento: "",
+    banco: "",
+    valor_adjustment: "",
+    data_vencimento: ""
+  });
   const { toast } = useToast();
+
+  const CATEGORIAS = [
+    'Contabilidade', 'Aluguel', 'Fornecedores', 'Salários', 'Impostos',
+    'Energia', 'Telefone', 'Internet', 'Água', 'Manutenção',
+    'Marketing', 'Combustível', 'Outras Despesas', 'Geral'
+  ];
+
+  const FORMAS_PAGAMENTO = [
+    'Dinheiro', 'PIX', 'Transferência Bancária', 'Boleto Bancário',
+    'Cartão de Débito', 'Cartão de Crédito', 'Cheque'
+  ];
+
+  const BANCOS = [
+    'Banco do Brasil', 'Caixa Econômica Federal', 'Bradesco', 'Itaú',
+    'Santander', 'Nubank', 'Inter', 'C6 Bank', 'BTG Pactual',
+    'Sicoob', 'Sicredi', 'Banrisul', 'Safra', 'Outro'
+  ];
 
   useEffect(() => {
     loadInstallments();
@@ -79,7 +107,6 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
   const filterInstallments = () => {
     let filtered = installments;
 
-    // Filtro por texto (descricao, fornecedor, numero NFe)
     if (searchTerm) {
       filtered = filtered.filter(item => 
         item.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -88,19 +115,205 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
       );
     }
 
-    // Filtro por data
     if (dateFilter) {
-      filtered = filtered.filter(item => 
-        item.data_vencimento === dateFilter
-      );
+      filtered = filtered.filter(item => item.data_vencimento === dateFilter);
     }
 
-    // Filtro por status
     if (statusFilter !== "todos") {
       filtered = filtered.filter(item => item.status === statusFilter);
     }
 
     setFilteredInstallments(filtered);
+  };
+
+  const handleBulkEdit = async () => {
+    if (selectedItems.length === 0) {
+      toast({
+        title: "Erro",
+        description: "Selecione pelo menos um item para editar",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      for (const itemId of selectedItems) {
+        const item = installments.find(i => i.id === itemId);
+        if (item) {
+          const updates: any = {};
+          if (bulkEditData.categoria) updates.categoria = bulkEditData.categoria;
+          if (bulkEditData.forma_pagamento) updates.forma_pagamento = bulkEditData.forma_pagamento;
+          if (bulkEditData.banco) updates.banco = bulkEditData.banco;
+          if (bulkEditData.data_vencimento) updates.data_vencimento = bulkEditData.data_vencimento;
+          
+          if (bulkEditData.valor_adjustment) {
+            const adjustment = bulkEditData.valor_adjustment;
+            if (adjustment.includes('%')) {
+              const percent = parseFloat(adjustment.replace('%', '')) / 100;
+              updates.valor = item.valor * (1 + percent);
+            } else {
+              const fixedAmount = parseFloat(adjustment);
+              updates.valor = item.valor + fixedAmount;
+            }
+          }
+
+          const { error } = await supabase
+            .from('ap_installments')
+            .update(updates)
+            .eq('id', itemId);
+
+          if (error) throw error;
+        }
+      }
+
+      toast({
+        title: "Edição em Massa Concluída",
+        description: `${selectedItems.length} itens foram atualizados com sucesso`
+      });
+
+      loadInstallments();
+      onDataChange();
+      setBulkEditOpen(false);
+      setSelectedItems([]);
+      setBulkEditData({
+        categoria: "",
+        forma_pagamento: "",
+        banco: "",
+        valor_adjustment: "",
+        data_vencimento: ""
+      });
+    } catch (error) {
+      console.error('Erro na edição em massa:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar os itens",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const exportData = () => {
+    const dataToExport = filteredInstallments.map(item => ({
+      Fornecedor: item.fornecedor,
+      Descrição: item.descricao,
+      Valor: item.valor,
+      'Data Vencimento': item.data_vencimento,
+      'Data Pagamento': item.data_pagamento || '',
+      Status: item.status,
+      Categoria: item.categoria,
+      'Forma Pagamento': item.forma_pagamento || '',
+      Banco: item.banco || '',
+      'Número Documento': item.numero_documento || '',
+      Observações: item.observacoes || '',
+      'NFe ID': item.nfe_id || ''
+    }));
+
+    const csvContent = [
+      Object.keys(dataToExport[0]).join(','),
+      ...dataToExport.map(row => Object.values(row).map(val => `"${val}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `contas-a-pagar-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Exportação Concluída",
+      description: `${dataToExport.length} registros exportados com sucesso`
+    });
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const text = await file.text();
+    const lines = text.split('\n');
+    const headers = lines[0].split(',').map(h => h.replace(/"/g, ''));
+    
+    let imported = 0;
+    let duplicates = 0;
+    let errors = 0;
+
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      
+      const values = lines[i].split(',').map(v => v.replace(/"/g, ''));
+      const row: any = {};
+      
+      headers.forEach((header, index) => {
+        row[header] = values[index] || '';
+      });
+
+      try {
+        const { data: existing } = await supabase
+          .from('ap_installments')
+          .select('id')
+          .eq('fornecedor', row.Fornecedor)
+          .eq('descricao', row.Descrição);
+
+        if (existing && existing.length > 0) {
+          duplicates++;
+          continue;
+        }
+
+        const { error } = await supabase
+          .from('ap_installments')
+          .insert({
+            fornecedor: row.Fornecedor,
+            descricao: row.Descrição,
+            valor: parseFloat(row.Valor) || 0,
+            data_vencimento: row['Data Vencimento'],
+            categoria: row.Categoria || 'Geral',
+            forma_pagamento: row['Forma Pagamento'] || null,
+            banco: row.Banco || null,
+            numero_documento: row['Número Documento'] || null,
+            observacoes: row.Observações || null,
+            status: 'aberto'
+          });
+
+        if (error) {
+          errors++;
+          console.error('Erro ao importar linha:', error);
+        } else {
+          imported++;
+        }
+      } catch (error) {
+        errors++;
+        console.error('Erro no processamento da linha:', error);
+      }
+    }
+
+    toast({
+      title: "Importação Concluída",
+      description: `${imported} registros importados, ${duplicates} duplicatas ignoradas, ${errors} erros`
+    });
+
+    loadInstallments();
+    onDataChange();
+    setImportModalOpen(false);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedItems.length === filteredInstallments.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(filteredInstallments.map(item => item.id));
+    }
+  };
+
+  const toggleSelectItem = (itemId: string) => {
+    setSelectedItems(prev => 
+      prev.includes(itemId) 
+        ? prev.filter(id => id !== itemId)
+        : [...prev, itemId]
+    );
   };
 
   const handlePayment = async (installment: Installment) => {
@@ -215,50 +428,6 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
     );
   };
 
-  const CATEGORIAS = [
-    'Contabilidade',
-    'Aluguel',
-    'Fornecedores',
-    'Salários',
-    'Impostos',
-    'Energia',
-    'Telefone',
-    'Internet',
-    'Água',
-    'Manutenção',
-    'Marketing',
-    'Combustível',
-    'Outras Despesas',
-    'Geral'
-  ];
-
-  const FORMAS_PAGAMENTO = [
-    'Dinheiro',
-    'PIX',
-    'Transferência Bancária',
-    'Boleto Bancário',
-    'Cartão de Débito',
-    'Cartão de Crédito',
-    'Cheque'
-  ];
-
-  const BANCOS = [
-    'Banco do Brasil',
-    'Caixa Econômica Federal',
-    'Bradesco',
-    'Itaú',
-    'Santander',
-    'Nubank',
-    'Inter',
-    'C6 Bank',
-    'BTG Pactual',
-    'Sicoob',
-    'Sicredi',
-    'Banrisul',
-    'Safra',
-    'Outro'
-  ];
-
   const calculateTotals = () => {
     const aberto = filteredInstallments
       .filter(item => item.status === 'aberto')
@@ -296,7 +465,25 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Contas a Pagar</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>Contas a Pagar</CardTitle>
+          <div className="flex gap-2">
+            {selectedItems.length > 0 && (
+              <Button onClick={() => setBulkEditOpen(true)} variant="outline">
+                <Users className="h-4 w-4 mr-2" />
+                Editar {selectedItems.length} Selecionados
+              </Button>
+            )}
+            <Button onClick={exportData} variant="outline">
+              <Download className="h-4 w-4 mr-2" />
+              Exportar
+            </Button>
+            <Button onClick={() => setImportModalOpen(true)} variant="outline">
+              <Upload className="h-4 w-4 mr-2" />
+              Importar
+            </Button>
+          </div>
+        </div>
         
         {/* Filtros */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
@@ -364,6 +551,12 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={selectedItems.length === filteredInstallments.length && filteredInstallments.length > 0}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>Fornecedor</TableHead>
                   <TableHead>Descrição</TableHead>
                   <TableHead>Valor</TableHead>
@@ -377,6 +570,12 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
               <TableBody>
                 {filteredInstallments.map((installment) => (
                   <TableRow key={installment.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedItems.includes(installment.id)}
+                        onCheckedChange={() => toggleSelectItem(installment.id)}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">
                       {installment.fornecedor}
                     </TableCell>
@@ -676,6 +875,123 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
             </Card>
           </div>
         </div>
+        
+        {/* Modal de Edição em Massa */}
+        <Dialog open={bulkEditOpen} onOpenChange={setBulkEditOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Editar {selectedItems.length} Itens Selecionados</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="bulkCategoria">Categoria</Label>
+                <select
+                  id="bulkCategoria"
+                  value={bulkEditData.categoria}
+                  onChange={(e) => setBulkEditData({...bulkEditData, categoria: e.target.value})}
+                  className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md"
+                >
+                  <option value="">Não alterar</option>
+                  {CATEGORIAS.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <Label htmlFor="bulkFormaPagamento">Forma de Pagamento</Label>
+                <select
+                  id="bulkFormaPagamento"
+                  value={bulkEditData.forma_pagamento}
+                  onChange={(e) => setBulkEditData({...bulkEditData, forma_pagamento: e.target.value})}
+                  className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md"
+                >
+                  <option value="">Não alterar</option>
+                  {FORMAS_PAGAMENTO.map(forma => (
+                    <option key={forma} value={forma}>{forma}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <Label htmlFor="bulkBanco">Banco</Label>
+                <select
+                  id="bulkBanco"
+                  value={bulkEditData.banco}
+                  onChange={(e) => setBulkEditData({...bulkEditData, banco: e.target.value})}
+                  className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md"
+                >
+                  <option value="">Não alterar</option>
+                  {BANCOS.map(banco => (
+                    <option key={banco} value={banco}>{banco}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <Label htmlFor="bulkDataVencimento">Data de Vencimento</Label>
+                <Input
+                  id="bulkDataVencimento"
+                  type="date"
+                  value={bulkEditData.data_vencimento}
+                  onChange={(e) => setBulkEditData({...bulkEditData, data_vencimento: e.target.value})}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="bulkValorAjuste">Ajuste de Valor</Label>
+                <Input
+                  id="bulkValorAjuste"
+                  placeholder="Ex: +10%, -5%, +100, -50"
+                  value={bulkEditData.valor_adjustment}
+                  onChange={(e) => setBulkEditData({...bulkEditData, valor_adjustment: e.target.value})}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Use +10% ou -5% para percentual, +100 ou -50 para valor fixo
+                </p>
+              </div>
+              
+              <Button onClick={handleBulkEdit} className="w-full">
+                Aplicar Alterações
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Importação */}
+        <Dialog open={importModalOpen} onOpenChange={setImportModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Importar Dados</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="importFile">Arquivo CSV</Label>
+                <Input
+                  id="importFile"
+                  type="file"
+                  accept=".csv"
+                  onChange={handleImport}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  O arquivo deve ter as colunas: Fornecedor, Descrição, Valor, Data Vencimento, Categoria
+                </p>
+              </div>
+              
+              <div className="bg-muted p-3 rounded-md">
+                <h4 className="font-medium mb-2">Formato esperado:</h4>
+                <pre className="text-xs">
+                  Fornecedor,Descrição,Valor,Data Vencimento,Categoria{'\n'}
+                  "Empresa XYZ","Serviços de TI",1500.00,2024-02-15,Fornecedores
+                </pre>
+              </div>
+              
+              <p className="text-sm text-yellow-600">
+                ⚠️ Duplicatas baseadas em Fornecedor + Descrição não serão importadas
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

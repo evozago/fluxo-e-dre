@@ -76,31 +76,47 @@ Deno.serve(async (req) => {
       valorTotal
     })
 
-    // Insert into nfe_data table
-    const { data: nfeData, error: nfeError } = await supabase
+    // Check if NFe already exists
+    const { data: existingNfe } = await supabase
       .from('nfe_data')
-      .insert({
-        numero_nfe: numeroNfe,
-        serie: serie,
-        chave_acesso: chaveAcesso,
-        cnpj_emitente: cnpjEmitente,
-        nome_emitente: nomeEmitente,
-        cnpj_destinatario: cnpjDestinatario,
-        nome_destinatario: nomeDestinatario,
-        data_emissao: dataEmissao,
-        valor_total: valorTotal,
-        valor_icms: valorICMS,
-        valor_ipi: valorIPI,
-        valor_pis: valorPIS,
-        valor_cofins: valorCOFINS,
-        xml_content: xmlContent
-      })
-      .select()
-      .single()
+      .select('id')
+      .eq('chave_acesso', chaveAcesso)
+      .maybeSingle()
 
-    if (nfeError) {
-      console.error('Error inserting NFe data:', nfeError)
-      throw nfeError
+    let nfeData
+    
+    if (existingNfe) {
+      console.log('NFe already exists, using existing record:', existingNfe.id)
+      nfeData = existingNfe
+    } else {
+      // Insert new NFe data
+      const { data: newNfeData, error: nfeError } = await supabase
+        .from('nfe_data')
+        .insert({
+          numero_nfe: numeroNfe,
+          serie: serie,
+          chave_acesso: chaveAcesso,
+          cnpj_emitente: cnpjEmitente,
+          nome_emitente: nomeEmitente,
+          cnpj_destinatario: cnpjDestinatario,
+          nome_destinatario: nomeDestinatario,
+          data_emissao: dataEmissao,
+          valor_total: valorTotal,
+          valor_icms: valorICMS,
+          valor_ipi: valorIPI,
+          valor_pis: valorPIS,
+          valor_cofins: valorCOFINS,
+          xml_content: xmlContent
+        })
+        .select()
+        .single()
+
+      if (nfeError) {
+        console.error('Error inserting NFe data:', nfeError)
+        throw nfeError
+      }
+      
+      nfeData = newNfeData
     }
 
     console.log('NFe data inserted successfully:', nfeData.id)
@@ -119,6 +135,20 @@ Deno.serve(async (req) => {
         const vDup = parseFloat(extractValue(dup, 'vDup') || '0')
         
         if (dVenc && vDup > 0) {
+          // Check if installment already exists for this NFe
+          const { data: existingInstallment } = await supabase
+            .from('ap_installments')
+            .select('id')
+            .eq('nfe_id', nfeData.id)
+            .eq('descricao', `NFe ${numeroNfe} - Parcela ${nDup} - ${nomeEmitente}`)
+            .maybeSingle()
+          
+          if (existingInstallment) {
+            console.log('Installment already exists, skipping:', existingInstallment.id)
+            installments.push(existingInstallment.id)
+            continue
+          }
+
           // Get default entity (first one found) to comply with NOT NULL constraint
           const { data: entities } = await supabase
             .from('entidades')
@@ -155,43 +185,56 @@ Deno.serve(async (req) => {
         }
       }
     } else {
-      // No duplicatas found, create single installment with 30 days
-      const vencimento = new Date()
-      vencimento.setDate(vencimento.getDate() + 30)
-
-      // Get default entity (first one found) to comply with NOT NULL constraint
-      const { data: entities } = await supabase
-        .from('entidades')
-        .select('id')
-        .eq('ativo', true)
-        .limit(1)
-      
-      const entidadeId = entities?.[0]?.id
-      
-      if (!entidadeId) {
-        throw new Error('Nenhuma entidade ativa encontrada. É necessário ter pelo menos uma entidade cadastrada.')
-      }
-
-      const { data: apData, error: apError } = await supabase
+      // Check if single installment already exists for this NFe
+      const { data: existingInstallment } = await supabase
         .from('ap_installments')
-        .insert({
-          nfe_id: nfeData.id,
-          descricao: `NFe ${numeroNfe} - ${nomeEmitente}`,
-          fornecedor: nomeEmitente,
-          valor: valorTotal,
-          data_vencimento: vencimento.toISOString().split('T')[0],
-          categoria: 'NFe',
-          entidade_id: entidadeId
-        })
-        .select()
-        .single()
-
-      if (apError) {
-        console.error('Error inserting AP installment:', apError)
-        throw apError
-      }
+        .select('id')
+        .eq('nfe_id', nfeData.id)
+        .eq('descricao', `NFe ${numeroNfe} - ${nomeEmitente}`)
+        .maybeSingle()
       
-      installments.push(apData.id)
+      if (existingInstallment) {
+        console.log('Single installment already exists, using existing:', existingInstallment.id)
+        installments.push(existingInstallment.id)
+      } else {
+        // No duplicatas found, create single installment with 30 days
+        const vencimento = new Date()
+        vencimento.setDate(vencimento.getDate() + 30)
+
+        // Get default entity (first one found) to comply with NOT NULL constraint
+        const { data: entities } = await supabase
+          .from('entidades')
+          .select('id')
+          .eq('ativo', true)
+          .limit(1)
+        
+        const entidadeId = entities?.[0]?.id
+        
+        if (!entidadeId) {
+          throw new Error('Nenhuma entidade ativa encontrada. É necessário ter pelo menos uma entidade cadastrada.')
+        }
+
+        const { data: apData, error: apError } = await supabase
+          .from('ap_installments')
+          .insert({
+            nfe_id: nfeData.id,
+            descricao: `NFe ${numeroNfe} - ${nomeEmitente}`,
+            fornecedor: nomeEmitente,
+            valor: valorTotal,
+            data_vencimento: vencimento.toISOString().split('T')[0],
+            categoria: 'NFe',
+            entidade_id: entidadeId
+          })
+          .select()
+          .single()
+
+        if (apError) {
+          console.error('Error inserting AP installment:', apError)
+          throw apError
+        }
+        
+        installments.push(apData.id)
+      }
     }
 
     console.log('AP installments created successfully:', installments)

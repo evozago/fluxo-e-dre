@@ -4,21 +4,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UploadNFeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
-export const UploadNFeModal = ({ open, onOpenChange }: UploadNFeModalProps) => {
+export const UploadNFeModal = ({ open, onOpenChange, onSuccess }: UploadNFeModalProps) => {
   const [files, setFiles] = useState<FileList | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFiles(e.target.files);
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!files || files.length === 0) {
       toast({
         title: "Erro",
@@ -39,13 +42,59 @@ export const UploadNFeModal = ({ open, onOpenChange }: UploadNFeModalProps) => {
       return;
     }
 
-    toast({
-      title: "Upload realizado",
-      description: `${xmlFiles.length} arquivo(s) XML processado(s) com sucesso`
-    });
-    
-    setFiles(null);
-    onOpenChange(false);
+    setIsProcessing(true);
+
+    try {
+      let processedCount = 0;
+      let errorCount = 0;
+
+      for (const file of xmlFiles) {
+        try {
+          const xmlContent = await file.text();
+          
+          const { data, error } = await supabase.functions.invoke('process-nfe-xml', {
+            body: { xmlContent }
+          });
+
+          if (error) {
+            console.error('Error processing file:', file.name, error);
+            errorCount++;
+          } else {
+            console.log('File processed successfully:', file.name, data);
+            processedCount++;
+          }
+        } catch (error) {
+          console.error('Error reading file:', file.name, error);
+          errorCount++;
+        }
+      }
+
+      if (processedCount > 0) {
+        toast({
+          title: "Upload realizado",
+          description: `${processedCount} arquivo(s) XML processado(s) com sucesso${errorCount > 0 ? `. ${errorCount} arquivo(s) com erro.` : ''}`
+        });
+        
+        setFiles(null);
+        onOpenChange(false);
+        onSuccess?.();
+      } else {
+        toast({
+          title: "Erro no processamento",
+          description: "Nenhum arquivo foi processado com sucesso",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao processar os arquivos XML",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -71,11 +120,19 @@ export const UploadNFeModal = ({ open, onOpenChange }: UploadNFeModalProps) => {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={handleUpload} className="flex-1">
+            <Button 
+              onClick={handleUpload} 
+              className="flex-1" 
+              disabled={isProcessing}
+            >
               <Upload className="w-4 h-4 mr-2" />
-              Processar XML
+              {isProcessing ? "Processando..." : "Processar XML"}
             </Button>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              disabled={isProcessing}
+            >
               Cancelar
             </Button>
           </div>

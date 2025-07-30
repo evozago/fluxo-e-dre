@@ -14,7 +14,119 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ap_installments: {
+        Row: {
+          categoria: string | null
+          created_at: string
+          data_pagamento: string | null
+          data_vencimento: string
+          descricao: string
+          fornecedor: string
+          id: string
+          nfe_id: string | null
+          observacoes: string | null
+          status: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento: string
+          descricao: string
+          fornecedor: string
+          id?: string
+          nfe_id?: string | null
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento?: string
+          descricao?: string
+          fornecedor?: string
+          id?: string
+          nfe_id?: string | null
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ap_installments_nfe_id_fkey"
+            columns: ["nfe_id"]
+            isOneToOne: false
+            referencedRelation: "nfe_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nfe_data: {
+        Row: {
+          chave_acesso: string
+          cnpj_destinatario: string | null
+          cnpj_emitente: string
+          created_at: string
+          data_emissao: string
+          id: string
+          nome_destinatario: string | null
+          nome_emitente: string
+          numero_nfe: string
+          serie: string
+          updated_at: string
+          valor_cofins: number | null
+          valor_icms: number | null
+          valor_ipi: number | null
+          valor_pis: number | null
+          valor_total: number
+          xml_content: string
+        }
+        Insert: {
+          chave_acesso: string
+          cnpj_destinatario?: string | null
+          cnpj_emitente: string
+          created_at?: string
+          data_emissao: string
+          id?: string
+          nome_destinatario?: string | null
+          nome_emitente: string
+          numero_nfe: string
+          serie: string
+          updated_at?: string
+          valor_cofins?: number | null
+          valor_icms?: number | null
+          valor_ipi?: number | null
+          valor_pis?: number | null
+          valor_total: number
+          xml_content: string
+        }
+        Update: {
+          chave_acesso?: string
+          cnpj_destinatario?: string | null
+          cnpj_emitente?: string
+          created_at?: string
+          data_emissao?: string
+          id?: string
+          nome_destinatario?: string | null
+          nome_emitente?: string
+          numero_nfe?: string
+          serie?: string
+          updated_at?: string
+          valor_cofins?: number | null
+          valor_icms?: number | null
+          valor_ipi?: number | null
+          valor_pis?: number | null
+          valor_total?: number
+          xml_content?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

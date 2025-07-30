@@ -7,11 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Edit, Check, DollarSign, Calendar, Download, Upload, Users, Paperclip, CreditCard } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Edit, Check, DollarSign, Calendar, Download, Upload, Users, Paperclip, CreditCard, ChevronUp, ChevronDown, FileText, Repeat } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { UploadReceiptModal } from "./UploadReceiptModal";
 import { BankStatementImport } from "./BankStatementImport";
+import { TitleDetailModal } from "./TitleDetailModal";
 
 interface Installment {
   id: string;
@@ -29,6 +31,12 @@ interface Installment {
   numero_documento: string | null;
   entidade_id: string;
   comprovante_path: string | null;
+  numero_parcela: number;
+  total_parcelas: number;
+  valor_total_titulo: number;
+  eh_recorrente: boolean;
+  tipo_recorrencia: string | null;
+  valor_fixo: boolean;
   entidades?: {
     id: string;
     nome: string;
@@ -73,6 +81,16 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
   });
   const [entidades, setEntidades] = useState<{id: string, nome: string, tipo: string}[]>([]);
   const [fornecedores, setFornecedores] = useState<{id: string, nome: string}[]>([]);
+  const [sortField, setSortField] = useState<string>("");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [titleDetailOpen, setTitleDetailOpen] = useState(false);
+  const [selectedTitle, setSelectedTitle] = useState<{
+    nfe_id?: string | null;
+    fornecedor: string;
+    descricao: string;
+    valor_total_titulo: number;
+  } | null>(null);
+  const [recurrentExpenseOpen, setRecurrentExpenseOpen] = useState(false);
   const { toast } = useToast();
 
   const CATEGORIAS = [
@@ -162,7 +180,8 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
       filtered = filtered.filter(item => 
         item.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.fornecedor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.nfe_id && item.nfe_id.toLowerCase().includes(searchTerm.toLowerCase()))
+        (item.nfe_id && item.nfe_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.numero_documento && item.numero_documento.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
@@ -174,7 +193,53 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
       filtered = filtered.filter(item => item.status === statusFilter);
     }
 
+    // Aplicar ordenação se definida
+    if (sortField) {
+      filtered.sort((a, b) => {
+        let aValue = a[sortField as keyof Installment];
+        let bValue = b[sortField as keyof Installment];
+        
+        // Tratar valores nulos
+        if (aValue === null || aValue === undefined) aValue = "";
+        if (bValue === null || bValue === undefined) bValue = "";
+        
+        // Converter para string para comparação
+        const aStr = String(aValue).toLowerCase();
+        const bStr = String(bValue).toLowerCase();
+        
+        if (sortDirection === "asc") {
+          return aStr.localeCompare(bStr);
+        } else {
+          return bStr.localeCompare(aStr);
+        }
+      });
+    }
+
     setFilteredInstallments(filtered);
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) return null;
+    return sortDirection === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
+  };
+
+  const handleTitleClick = (installment: Installment) => {
+    setSelectedTitle({
+      nfe_id: installment.nfe_id,
+      fornecedor: installment.fornecedor,
+      descricao: installment.descricao,
+      valor_total_titulo: installment.valor_total_titulo
+    });
+    setTitleDetailOpen(true);
   };
 
   const handleBulkEdit = async () => {
@@ -555,6 +620,11 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
               <Upload className="h-4 w-4 mr-2" />
               Importar
             </Button>
+            
+            <Button onClick={() => setRecurrentExpenseOpen(true)} variant="outline">
+              <Repeat className="mr-2 h-4 w-4" />
+              Despesa Recorrente
+            </Button>
           </div>
         </div>
         
@@ -630,12 +700,63 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                       onCheckedChange={toggleSelectAll}
                     />
                   </TableHead>
-                  <TableHead>Fornecedor</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Vencimento</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Categoria</TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50" 
+                    onClick={() => handleSort('fornecedor')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Fornecedor
+                      {getSortIcon('fornecedor')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50" 
+                    onClick={() => handleSort('descricao')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Descrição
+                      {getSortIcon('descricao')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50" 
+                    onClick={() => handleSort('valor')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Valor
+                      {getSortIcon('valor')}
+                    </div>
+                  </TableHead>
+                  <TableHead>Valor Total</TableHead>
+                  <TableHead>Parcela</TableHead>
+                  <TableHead>Nº Doc/NFe</TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50" 
+                    onClick={() => handleSort('data_vencimento')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Vencimento
+                      {getSortIcon('data_vencimento')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50" 
+                    onClick={() => handleSort('status')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Status
+                      {getSortIcon('status')}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50" 
+                    onClick={() => handleSort('categoria')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Categoria
+                      {getSortIcon('categoria')}
+                    </div>
+                  </TableHead>
                   <TableHead>Entidade</TableHead>
                   <TableHead>Forma Pagto</TableHead>
                   <TableHead>Ações</TableHead>
@@ -659,8 +780,41 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                     <TableCell className="font-medium">
                       {installment.fornecedor}
                     </TableCell>
-                    <TableCell>{installment.descricao}</TableCell>
+                    <TableCell>
+                      <button 
+                        className="text-left hover:text-primary cursor-pointer underline"
+                        onClick={() => handleTitleClick(installment)}
+                      >
+                        {installment.descricao}
+                      </button>
+                    </TableCell>
                     <TableCell>{formatCurrency(installment.valor)}</TableCell>
+                    <TableCell>
+                      {installment.valor_total_titulo ? formatCurrency(installment.valor_total_titulo) : formatCurrency(installment.valor)}
+                    </TableCell>
+                    <TableCell>
+                      {installment.total_parcelas > 1 ? 
+                        `${installment.numero_parcela}/${installment.total_parcelas}` : 
+                        '1/1'
+                      }
+                      {installment.eh_recorrente && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Repeat className="h-3 w-3" />
+                          Recorrente
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {installment.numero_documento || (installment.nfe_id ? 'NFe' : '-')}
+                        {installment.nfe_id && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <FileText className="h-3 w-3" />
+                            {installment.nfe_id.substring(0, 8)}...
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{formatDate(installment.data_vencimento)}</TableCell>
                     <TableCell>{getStatusBadge(installment.status)}</TableCell>
                     <TableCell>{installment.categoria}</TableCell>
@@ -1177,6 +1331,129 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
             onDataChange();
           }}
         />
+
+        {/* Modal de Detalhamento do Título */}
+        <TitleDetailModal
+          isOpen={titleDetailOpen}
+          onClose={() => setTitleDetailOpen(false)}
+          titleInfo={selectedTitle}
+          onDataChange={() => {
+            loadInstallments();
+            onDataChange();
+          }}
+        />
+
+        {/* Modal de Despesa Recorrente */}
+        <Dialog open={recurrentExpenseOpen} onOpenChange={setRecurrentExpenseOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Criar Despesa Recorrente</DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="recurrent-fornecedor">Fornecedor</Label>
+                  <Input
+                    id="recurrent-fornecedor"
+                    placeholder="Nome do fornecedor"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="recurrent-descricao">Descrição</Label>
+                  <Input
+                    id="recurrent-descricao"
+                    placeholder="Ex: Aluguel, Energia elétrica"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="recurrent-categoria">Categoria</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIAS.map((cat) => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="recurrent-entidade">Entidade</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a entidade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {entidades.map((entidade) => (
+                        <SelectItem key={entidade.id} value={entidade.id}>
+                          {entidade.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="recurrent-valor-tipo">Tipo de Valor</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Fixo ou Variável" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fixo">Valor Fixo</SelectItem>
+                      <SelectItem value="variavel">Valor Variável</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="recurrent-valor">Valor (se fixo)</Label>
+                  <Input
+                    id="recurrent-valor"
+                    type="number"
+                    step="0.01"
+                    placeholder="0,00"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="recurrent-vencimento">Dia do Vencimento</Label>
+                  <Input
+                    id="recurrent-vencimento"
+                    type="number"
+                    min="1"
+                    max="31"
+                    placeholder="5"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="recurrent-inicio">Data de Início</Label>
+                  <Input
+                    id="recurrent-inicio"
+                    type="date"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setRecurrentExpenseOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button>
+                  Criar Despesa Recorrente
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

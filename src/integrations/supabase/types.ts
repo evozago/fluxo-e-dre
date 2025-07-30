@@ -23,16 +23,22 @@ export type Database = {
           data_pagamento: string | null
           data_vencimento: string
           descricao: string
+          eh_recorrente: boolean | null
           entidade_id: string
           forma_pagamento: string | null
           fornecedor: string
           id: string
           nfe_id: string | null
           numero_documento: string | null
+          numero_parcela: number | null
           observacoes: string | null
           status: string
+          tipo_recorrencia: string | null
+          total_parcelas: number | null
           updated_at: string
           valor: number
+          valor_fixo: boolean | null
+          valor_total_titulo: number | null
         }
         Insert: {
           banco?: string | null
@@ -42,16 +48,22 @@ export type Database = {
           data_pagamento?: string | null
           data_vencimento: string
           descricao: string
+          eh_recorrente?: boolean | null
           entidade_id: string
           forma_pagamento?: string | null
           fornecedor: string
           id?: string
           nfe_id?: string | null
           numero_documento?: string | null
+          numero_parcela?: number | null
           observacoes?: string | null
           status?: string
+          tipo_recorrencia?: string | null
+          total_parcelas?: number | null
           updated_at?: string
           valor: number
+          valor_fixo?: boolean | null
+          valor_total_titulo?: number | null
         }
         Update: {
           banco?: string | null
@@ -61,16 +73,22 @@ export type Database = {
           data_pagamento?: string | null
           data_vencimento?: string
           descricao?: string
+          eh_recorrente?: boolean | null
           entidade_id?: string
           forma_pagamento?: string | null
           fornecedor?: string
           id?: string
           nfe_id?: string | null
           numero_documento?: string | null
+          numero_parcela?: number | null
           observacoes?: string | null
           status?: string
+          tipo_recorrencia?: string | null
+          total_parcelas?: number | null
           updated_at?: string
           valor?: number
+          valor_fixo?: boolean | null
+          valor_total_titulo?: number | null
         }
         Relationships: [
           {

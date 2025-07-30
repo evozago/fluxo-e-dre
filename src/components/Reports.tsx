@@ -348,14 +348,14 @@ export const Reports = ({ onDataChange }: ReportsProps) => {
             <div>
               <Label htmlFor="categoriaFilter">Filtrar Categorias</Label>
               <Select 
-                value={selectedCategories.join(',')} 
-                onValueChange={(value) => setSelectedCategories(value ? value.split(',') : [])}
+                value={selectedCategories.length > 0 ? selectedCategories.join(',') : 'all'} 
+                onValueChange={(value) => setSelectedCategories(value === 'all' ? [] : value.split(','))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Todas as categorias" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as categorias</SelectItem>
+                  <SelectItem value="all">Todas as categorias</SelectItem>
                   {categorias.map(categoria => (
                     <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
                   ))}
@@ -367,14 +367,14 @@ export const Reports = ({ onDataChange }: ReportsProps) => {
             <div>
               <Label htmlFor="entidadeFilter">Filtrar Entidades</Label>
               <Select 
-                value={selectedEntidades.join(',')} 
-                onValueChange={(value) => setSelectedEntidades(value ? value.split(',') : [])}
+                value={selectedEntidades.length > 0 ? selectedEntidades.join(',') : 'all'} 
+                onValueChange={(value) => setSelectedEntidades(value === 'all' ? [] : value.split(','))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Todas as entidades" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as entidades</SelectItem>
+                  <SelectItem value="all">Todas as entidades</SelectItem>
                   {entidades.map(entidade => (
                     <SelectItem key={entidade.id} value={entidade.id}>{entidade.nome}</SelectItem>
                   ))}

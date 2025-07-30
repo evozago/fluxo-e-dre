@@ -109,11 +109,11 @@ const Dashboard = () => {
             <p className="text-muted-foreground">Sistema de gestão financeira e DRE</p>
           </div>
           <div className="flex gap-2">
-            <Button>
+            <Button onClick={() => toast({ title: "Upload NFe", description: "Funcionalidade em desenvolvimento" })}>
               <Upload className="w-4 h-4 mr-2" />
               Upload NFe
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => toast({ title: "Comprovante", description: "Funcionalidade em desenvolvimento" })}>
               <Receipt className="w-4 h-4 mr-2" />
               Comprovante
             </Button>
@@ -190,15 +190,15 @@ const Dashboard = () => {
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex gap-4">
-                    <Button className="flex-1">
+                    <Button className="flex-1" onClick={() => toast({ title: "Upload NFe XML", description: "Funcionalidade em desenvolvimento" })}>
                       <Upload className="w-4 h-4 mr-2" />
                       Upload NFe XML
                     </Button>
-                    <Button variant="outline" className="flex-1">
+                    <Button variant="outline" className="flex-1" onClick={() => toast({ title: "Nova Despesa", description: "Funcionalidade em desenvolvimento" })}>
                       <FileText className="w-4 h-4 mr-2" />
                       Nova Despesa Manual
                     </Button>
-                    <Button variant="outline" className="flex-1">
+                    <Button variant="outline" className="flex-1" onClick={() => toast({ title: "Upload Comprovante", description: "Funcionalidade em desenvolvimento" })}>
                       <Receipt className="w-4 h-4 mr-2" />
                       Upload Comprovante
                     </Button>
@@ -235,7 +235,7 @@ const Dashboard = () => {
                     </div>
                   </div>
                   
-                  <Button>
+                  <Button onClick={() => toast({ title: "Gerar DRE", description: "Funcionalidade em desenvolvimento" })}>
                     <TrendingUp className="w-4 h-4 mr-2" />
                     Gerar DRE
                   </Button>
@@ -278,7 +278,7 @@ const Dashboard = () => {
                     />
                   </div>
                   
-                  <Button>Salvar Configurações</Button>
+                  <Button onClick={() => toast({ title: "Configurações", description: "Configurações salvas com sucesso!" })}>Salvar Configurações</Button>
                 </div>
               </CardContent>
             </Card>

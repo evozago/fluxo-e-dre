@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           banco: string | null
           categoria: string | null
+          comprovante_path: string | null
           created_at: string
           data_pagamento: string | null
           data_vencimento: string
@@ -36,6 +37,7 @@ export type Database = {
         Insert: {
           banco?: string | null
           categoria?: string | null
+          comprovante_path?: string | null
           created_at?: string
           data_pagamento?: string | null
           data_vencimento: string
@@ -54,6 +56,7 @@ export type Database = {
         Update: {
           banco?: string | null
           categoria?: string | null
+          comprovante_path?: string | null
           created_at?: string
           data_pagamento?: string | null
           data_vencimento?: string

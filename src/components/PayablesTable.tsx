@@ -107,12 +107,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
         .order('data_vencimento', { ascending: true });
 
       if (error) throw error;
-      // Mapear dados para incluir comprovante_path com valor padrão
-      const mappedData = (data || []).map(item => ({
-        ...item,
-        comprovante_path: item.comprovante_path || null
-      }));
-      setInstallments(mappedData);
+      setInstallments(data || []);
     } catch (error) {
       console.error('Erro ao carregar parcelas:', error);
       toast({
@@ -330,12 +325,26 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
     }
   };
 
-  const toggleSelectItem = (itemId: string) => {
-    setSelectedItems(prev => 
-      prev.includes(itemId) 
-        ? prev.filter(id => id !== itemId)
-        : [...prev, itemId]
-    );
+  const toggleSelectItem = (itemId: string, index: number, shiftKey: boolean = false) => {
+    if (shiftKey && lastSelectedIndex !== -1) {
+      // Seleção com shift - selecionar range
+      const start = Math.min(lastSelectedIndex, index);
+      const end = Math.max(lastSelectedIndex, index);
+      const rangeIds = filteredInstallments.slice(start, end + 1).map(item => item.id);
+      
+      setSelectedItems(prev => {
+        const newSelected = [...new Set([...prev, ...rangeIds])];
+        return newSelected;
+      });
+    } else {
+      // Seleção normal
+      setSelectedItems(prev => 
+        prev.includes(itemId) 
+          ? prev.filter(id => id !== itemId)
+          : [...prev, itemId]
+      );
+      setLastSelectedIndex(index);
+    }
   };
 
   const handlePayment = async (installment: Installment) => {
@@ -591,12 +600,18 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredInstallments.map((installment) => (
+                {filteredInstallments.map((installment, index) => (
                   <TableRow key={installment.id}>
                     <TableCell>
                       <Checkbox
                         checked={selectedItems.includes(installment.id)}
-                        onCheckedChange={() => toggleSelectItem(installment.id)}
+                        onCheckedChange={() => toggleSelectItem(installment.id, index)}
+                        onClick={(e) => {
+                          if (e.shiftKey) {
+                            e.preventDefault();
+                            toggleSelectItem(installment.id, index, true);
+                          }
+                        }}
                       />
                     </TableCell>
                     <TableCell className="font-medium">
@@ -623,6 +638,43 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
+                        {installment.status === 'pago' && installment.comprovante_path && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Visualizar comprovante
+                              const { data } = supabase.storage
+                                .from('receipts')
+                                .getPublicUrl(installment.comprovante_path!);
+                              window.open(data.publicUrl, '_blank');
+                            }}
+                          >
+                            <Paperclip className="h-4 w-4" />
+                          </Button>
+                        )}
+                        
+                        {installment.status === 'pago' && !installment.comprovante_path && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedInstallmentForReceipt(installment.id);
+                              setReceiptModalOpen(true);
+                            }}
+                          >
+                            <Paperclip className="h-4 w-4" />
+                          </Button>
+                        )}
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setBankImportOpen(true)}
+                        >
+                          <CreditCard className="h-4 w-4" />
+                        </Button>
+                        
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
@@ -1023,6 +1075,27 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Modal de Anexo de Comprovante */}
+        <UploadReceiptModal
+          isOpen={receiptModalOpen}
+          onOpenChange={setReceiptModalOpen}
+          installmentId={selectedInstallmentForReceipt}
+          onSuccess={() => {
+            loadInstallments();
+            onDataChange();
+          }}
+        />
+
+        {/* Modal de Importação de Extrato Bancário */}
+        <BankStatementImport
+          isOpen={bankImportOpen}
+          onOpenChange={setBankImportOpen}
+          onSuccess={() => {
+            loadInstallments();
+            onDataChange();
+          }}
+        />
       </CardContent>
     </Card>
   );

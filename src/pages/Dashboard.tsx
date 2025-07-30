@@ -340,7 +340,12 @@ const Dashboard = () => {
 
         {/* Modals */}
         <UploadNFeModal open={nfeModalOpen} onOpenChange={setNfeModalOpen} onSuccess={loadDashboardStats} />
-        <UploadReceiptModal open={receiptModalOpen} onOpenChange={setReceiptModalOpen} />
+        <UploadReceiptModal 
+          isOpen={receiptModalOpen} 
+          onOpenChange={setReceiptModalOpen}
+          installmentId=""
+          onSuccess={() => {}}
+        />
         <NewExpenseModal open={expenseModalOpen} onOpenChange={setExpenseModalOpen} />
       </div>
     </div>

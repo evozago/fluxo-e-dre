@@ -226,45 +226,6 @@ export const ConfigurationSettings = ({ onConfigChange }: ConfigurationSettingsP
         {renderItemList(formasPagamento, 'formasPagamento', 'Formas de Pagamento')}
         {renderItemList(bancos, 'bancos', 'Bancos')}
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Configurações da Empresa</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="cnpj">CNPJ da Empresa</Label>
-              <Input 
-                id="cnpj"
-                type="text" 
-                placeholder="00.000.000/0001-00"
-                defaultValue=""
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="razaoSocial">Razão Social</Label>
-              <Input 
-                id="razaoSocial"
-                type="text" 
-                placeholder="Lui Bambini Ltda"
-                defaultValue="Lui Bambini Ltda"
-              />
-            </div>
-            
-            <Button onClick={() => {
-              toast({ 
-                title: "Configurações Salvas", 
-                description: "As configurações da empresa foram salvas com sucesso" 
-              });
-            }}>
-              <Save className="h-4 w-4 mr-2" />
-              Salvar Configurações
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

@@ -77,6 +77,15 @@ export const Reports = ({ onDataChange }: ReportsProps) => {
   };
 
   const generateReport = async () => {
+    if (!startDate || !endDate) {
+      toast({
+        title: "Erro",
+        description: "Selecione as datas de início e fim",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       let query = supabase

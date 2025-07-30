@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Edit, Check, DollarSign, Calendar, Download, Upload, Users, Paperclip, CreditCard, ChevronUp, ChevronDown, FileText, Repeat } from "lucide-react";
+import { Search, Edit, Check, DollarSign, Calendar, Download, Upload, Users, Paperclip, CreditCard, ChevronUp, ChevronDown, FileText, Repeat, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { UploadReceiptModal } from "./UploadReceiptModal";
@@ -77,7 +77,11 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
     data_vencimento: "",
     entidade_id: "",
     descricao: "",
-    fornecedor: ""
+    fornecedor: "",
+    numero_documento: "",
+    eh_recorrente: false,
+    tipo_recorrencia: "mensal",
+    valor_fixo: false
   });
   const [entidades, setEntidades] = useState<{id: string, nome: string, tipo: string}[]>([]);
   const [fornecedores, setFornecedores] = useState<{id: string, nome: string}[]>([]);
@@ -264,6 +268,10 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
           if (bulkEditData.entidade_id) updates.entidade_id = bulkEditData.entidade_id;
           if (bulkEditData.descricao) updates.descricao = bulkEditData.descricao;
           if (bulkEditData.fornecedor) updates.fornecedor = bulkEditData.fornecedor;
+          if (bulkEditData.numero_documento) updates.numero_documento = bulkEditData.numero_documento;
+          if (bulkEditData.eh_recorrente !== undefined) updates.eh_recorrente = bulkEditData.eh_recorrente;
+          if (bulkEditData.tipo_recorrencia && bulkEditData.eh_recorrente) updates.tipo_recorrencia = bulkEditData.tipo_recorrencia;
+          if (bulkEditData.valor_fixo !== undefined && bulkEditData.eh_recorrente) updates.valor_fixo = bulkEditData.valor_fixo;
           
           if (bulkEditData.valor_adjustment) {
             const adjustment = bulkEditData.valor_adjustment;
@@ -302,7 +310,11 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
         data_vencimento: "",
         entidade_id: "",
         descricao: "",
-        fornecedor: ""
+        fornecedor: "",
+        numero_documento: "",
+        eh_recorrente: false,
+        tipo_recorrencia: "mensal",
+        valor_fixo: false
       });
     } catch (error) {
       console.error('Erro na edição em massa:', error);
@@ -421,6 +433,40 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
     loadInstallments();
     onDataChange();
     setImportModalOpen(false);
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedItems.length === 0) {
+      toast({
+        title: "Nenhum item selecionado",
+        description: "Selecione pelo menos uma parcela para excluir",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const { error } = await supabase
+      .from('ap_installments')
+      .delete()
+      .in('id', selectedItems);
+
+    if (error) {
+      toast({
+        title: "Erro ao excluir",
+        description: "Ocorreu um erro ao excluir as parcelas selecionadas",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "Parcelas excluídas",
+      description: `${selectedItems.length} parcela(s) excluída(s) com sucesso`
+    });
+
+    setSelectedItems([]);
+    loadInstallments();
+    onDataChange();
   };
 
   const toggleSelectAll = () => {
@@ -607,10 +653,16 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
           <CardTitle>Contas a Pagar</CardTitle>
           <div className="flex gap-2">
             {selectedItems.length > 0 && (
-              <Button onClick={() => setBulkEditOpen(true)} variant="outline">
-                <Users className="h-4 w-4 mr-2" />
-                Editar {selectedItems.length} Selecionados
-              </Button>
+              <>
+                <Button onClick={() => setBulkEditOpen(true)} variant="outline">
+                  <Users className="h-4 w-4 mr-2" />
+                  Editar {selectedItems.length} Selecionados
+                </Button>
+                <Button onClick={handleDeleteSelected} variant="destructive">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Excluir {selectedItems.length} Selecionados
+                </Button>
+              </>
             )}
             <Button onClick={exportData} variant="outline">
               <Download className="h-4 w-4 mr-2" />
@@ -806,13 +858,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        {installment.numero_documento || (installment.nfe_id ? 'NFe' : '-')}
-                        {installment.nfe_id && (
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <FileText className="h-3 w-3" />
-                            {installment.nfe_id.substring(0, 8)}...
-                          </div>
-                        )}
+                        {installment.numero_documento || '-'}
                       </div>
                     </TableCell>
                     <TableCell>{formatDate(installment.data_vencimento)}</TableCell>
@@ -958,20 +1004,134 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                                  </div>
                                  
                                  <div>
-                                  <Label htmlFor="editObservacoes">Observações</Label>
-                                  <Input
-                                    id="editObservacoes"
-                                    value={editingInstallment.observacoes || ""}
-                                    onChange={(e) => setEditingInstallment({
-                                      ...editingInstallment,
-                                      observacoes: e.target.value
-                                    })}
-                                  />
-                                </div>
-                                
-                                <Button onClick={() => handleEdit(editingInstallment)}>
-                                  Salvar Alterações
-                                </Button>
+                                   <Label htmlFor="editObservacoes">Observações</Label>
+                                   <Input
+                                     id="editObservacoes"
+                                     value={editingInstallment.observacoes || ""}
+                                     onChange={(e) => setEditingInstallment({
+                                       ...editingInstallment,
+                                       observacoes: e.target.value
+                                     })}
+                                   />
+                                 </div>
+
+                                 <div>
+                                   <Label htmlFor="editCategoria">Categoria</Label>
+                                   <Input
+                                     id="editCategoria"
+                                     value={editingInstallment.categoria || ""}
+                                     onChange={(e) => setEditingInstallment({
+                                       ...editingInstallment,
+                                       categoria: e.target.value
+                                     })}
+                                   />
+                                 </div>
+
+                                 <div>
+                                   <Label htmlFor="editNumeroDocumento">Número Documento/NFe</Label>
+                                   <Input
+                                     id="editNumeroDocumento"
+                                     value={editingInstallment.numero_documento || ""}
+                                     onChange={(e) => setEditingInstallment({
+                                       ...editingInstallment,
+                                       numero_documento: e.target.value
+                                     })}
+                                   />
+                                 </div>
+
+                                 <div>
+                                   <Label htmlFor="editValorTotal">Valor Total do Título</Label>
+                                   <Input
+                                     id="editValorTotal"
+                                     type="number"
+                                     step="0.01"
+                                     value={editingInstallment.valor_total_titulo || editingInstallment.valor}
+                                     onChange={(e) => setEditingInstallment({
+                                       ...editingInstallment,
+                                       valor_total_titulo: parseFloat(e.target.value)
+                                     })}
+                                   />
+                                 </div>
+
+                                 <div className="grid grid-cols-2 gap-4">
+                                   <div>
+                                     <Label htmlFor="editNumeroParcela">Parcela Número</Label>
+                                     <Input
+                                       id="editNumeroParcela"
+                                       type="number"
+                                       min="1"
+                                       value={editingInstallment.numero_parcela || 1}
+                                       onChange={(e) => setEditingInstallment({
+                                         ...editingInstallment,
+                                         numero_parcela: parseInt(e.target.value)
+                                       })}
+                                     />
+                                   </div>
+                                   <div>
+                                     <Label htmlFor="editTotalParcelas">Total de Parcelas</Label>
+                                     <Input
+                                       id="editTotalParcelas"
+                                       type="number"
+                                       min="1"
+                                       value={editingInstallment.total_parcelas || 1}
+                                       onChange={(e) => setEditingInstallment({
+                                         ...editingInstallment,
+                                         total_parcelas: parseInt(e.target.value)
+                                       })}
+                                     />
+                                   </div>
+                                 </div>
+
+                                 <div className="flex items-center space-x-2">
+                                   <Checkbox
+                                     id="editRecorrente"
+                                     checked={editingInstallment.eh_recorrente || false}
+                                     onCheckedChange={(checked) => setEditingInstallment({
+                                       ...editingInstallment,
+                                       eh_recorrente: checked as boolean
+                                     })}
+                                   />
+                                   <Label htmlFor="editRecorrente">Despesa Recorrente</Label>
+                                 </div>
+
+                                 {editingInstallment.eh_recorrente && (
+                                   <>
+                                     <div>
+                                       <Label htmlFor="editTipoRecorrencia">Tipo de Recorrência</Label>
+                                       <select
+                                         id="editTipoRecorrencia"
+                                         value={editingInstallment.tipo_recorrencia || "mensal"}
+                                         onChange={(e) => setEditingInstallment({
+                                           ...editingInstallment,
+                                           tipo_recorrencia: e.target.value
+                                         })}
+                                         className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md"
+                                       >
+                                         <option value="mensal">Mensal</option>
+                                         <option value="bimestral">Bimestral</option>
+                                         <option value="trimestral">Trimestral</option>
+                                         <option value="semestral">Semestral</option>
+                                         <option value="anual">Anual</option>
+                                       </select>
+                                     </div>
+
+                                     <div className="flex items-center space-x-2">
+                                       <Checkbox
+                                         id="editValorFixo"
+                                         checked={editingInstallment.valor_fixo || false}
+                                         onCheckedChange={(checked) => setEditingInstallment({
+                                           ...editingInstallment,
+                                           valor_fixo: checked as boolean
+                                         })}
+                                       />
+                                       <Label htmlFor="editValorFixo">Valor Fixo</Label>
+                                     </div>
+                                   </>
+                                 )}
+                                 
+                                 <Button onClick={() => handleEdit(editingInstallment)}>
+                                   Salvar Alterações
+                                 </Button>
                               </div>
                             )}
                           </DialogContent>
@@ -1246,7 +1406,55 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                 </select>
               </div>
               
-              <div>
+               <div>
+                 <Label htmlFor="bulkNumeroDocumento">Número Documento/NFe</Label>
+                 <Input
+                   id="bulkNumeroDocumento"
+                   placeholder="Número do documento"
+                   value={bulkEditData.numero_documento || ''}
+                   onChange={(e) => setBulkEditData({...bulkEditData, numero_documento: e.target.value})}
+                 />
+               </div>
+
+               <div className="flex items-center space-x-2">
+                 <Checkbox
+                   id="bulkRecorrente"
+                   checked={bulkEditData.eh_recorrente || false}
+                   onCheckedChange={(checked) => setBulkEditData({...bulkEditData, eh_recorrente: checked as boolean})}
+                 />
+                 <Label htmlFor="bulkRecorrente">Marcar como Despesa Recorrente</Label>
+               </div>
+
+               {bulkEditData.eh_recorrente && (
+                 <>
+                   <div>
+                     <Label htmlFor="bulkTipoRecorrencia">Tipo de Recorrência</Label>
+                     <select
+                       id="bulkTipoRecorrencia"
+                       value={bulkEditData.tipo_recorrencia || "mensal"}
+                       onChange={(e) => setBulkEditData({...bulkEditData, tipo_recorrencia: e.target.value})}
+                       className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md"
+                     >
+                       <option value="mensal">Mensal</option>
+                       <option value="bimestral">Bimestral</option>
+                       <option value="trimestral">Trimestral</option>
+                       <option value="semestral">Semestral</option>
+                       <option value="anual">Anual</option>
+                     </select>
+                   </div>
+
+                   <div className="flex items-center space-x-2">
+                     <Checkbox
+                       id="bulkValorFixo"
+                       checked={bulkEditData.valor_fixo || false}
+                       onCheckedChange={(checked) => setBulkEditData({...bulkEditData, valor_fixo: checked as boolean})}
+                     />
+                     <Label htmlFor="bulkValorFixo">Valor Fixo</Label>
+                   </div>
+                 </>
+               )}
+
+               <div>
                 <Label htmlFor="bulkDataVencimento">Data de Vencimento</Label>
                 <Input
                   id="bulkDataVencimento"

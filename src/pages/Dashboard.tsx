@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { UploadNFeModal } from "@/components/UploadNFeModal";
 import { UploadReceiptModal } from "@/components/UploadReceiptModal";
 import { NewExpenseModal } from "@/components/NewExpenseModal";
+import { PayablesTable } from "@/components/PayablesTable";
 
 interface DashboardStats {
   totalAberto: number;
@@ -217,15 +218,11 @@ const Dashboard = () => {
                       Upload Comprovante
                     </Button>
                   </div>
-                  
-                  <div className="border rounded-lg p-4">
-                    <p className="text-center text-muted-foreground">
-                      Nenhuma conta cadastrada ainda. Faça upload de uma NFe ou cadastre uma despesa manual para começar.
-                    </p>
-                  </div>
                 </div>
               </CardContent>
             </Card>
+            
+            <PayablesTable onDataChange={loadDashboardStats} />
           </TabsContent>
 
           <TabsContent value="dre" className="space-y-4">

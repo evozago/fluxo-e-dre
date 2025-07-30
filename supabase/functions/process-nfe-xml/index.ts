@@ -1,5 +1,4 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { DOMParser } from 'https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,38 +25,46 @@ Deno.serve(async (req) => {
 
     console.log('Processing XML content...')
     
-    // Parse XML to extract NFe data
-    const parser = new DOMParser()
-    const xmlDoc = parser.parseFromString(xmlContent, 'application/xml')
-
-    // Extract data from XML structure
-    const infNFe = xmlDoc.querySelector('infNFe')
-    const ide = xmlDoc.querySelector('ide')
-    const emit = xmlDoc.querySelector('emit')
-    const dest = xmlDoc.querySelector('dest')
-    const total = xmlDoc.querySelector('total')
-    const ICMSTot = xmlDoc.querySelector('ICMSTot')
-
-    if (!infNFe || !ide || !emit || !total || !ICMSTot) {
-      throw new Error('Invalid NFe XML structure')
+    // Helper function to extract text from XML using regex
+    function extractValue(xml: string, tag: string): string {
+      const regex = new RegExp(`<${tag}[^>]*>([^<]*)<\\/${tag}>`)
+      const match = xml.match(regex)
+      return match ? match[1].trim() : ''
     }
 
-    const chaveAcesso = infNFe.getAttribute('Id')?.replace('NFe', '') || ''
-    const numeroNfe = ide.querySelector('nNF')?.textContent || ''
-    const serie = ide.querySelector('serie')?.textContent || ''
-    const dataEmissao = ide.querySelector('dhEmi')?.textContent?.split('T')[0] || ''
+    // Helper function to extract attribute value
+    function extractAttribute(xml: string, element: string, attribute: string): string {
+      const regex = new RegExp(`<${element}[^>]*${attribute}="([^"]*)"`)
+      const match = xml.match(regex)
+      return match ? match[1] : ''
+    }
+
+    // Extract data from XML using regex
+    const chaveAcesso = extractAttribute(xmlContent, 'infNFe', 'Id').replace('NFe', '')
+    const numeroNfe = extractValue(xmlContent, 'nNF')
+    const serie = extractValue(xmlContent, 'serie')
+    const dataEmissaoFull = extractValue(xmlContent, 'dhEmi')
+    const dataEmissao = dataEmissaoFull.split('T')[0]
     
-    const cnpjEmitente = emit.querySelector('CNPJ')?.textContent || ''
-    const nomeEmitente = emit.querySelector('xNome')?.textContent || ''
+    // Emitente data
+    const cnpjEmitente = extractValue(xmlContent, 'CNPJ')
+    const nomeEmitente = extractValue(xmlContent, 'xNome')
     
-    const cnpjDestinatario = dest?.querySelector('CNPJ')?.textContent || ''
-    const nomeDestinatario = dest?.querySelector('xNome')?.textContent || ''
+    // Destinatário data (buscar após o emit)
+    const destSection = xmlContent.split('<dest>')[1]?.split('</dest>')[0] || ''
+    const cnpjDestinatario = extractValue(destSection, 'CNPJ')
+    const nomeDestinatario = extractValue(destSection, 'xNome')
     
-    const valorTotal = parseFloat(ICMSTot.querySelector('vNF')?.textContent || '0')
-    const valorICMS = parseFloat(ICMSTot.querySelector('vICMS')?.textContent || '0')
-    const valorIPI = parseFloat(ICMSTot.querySelector('vIPI')?.textContent || '0')
-    const valorPIS = parseFloat(ICMSTot.querySelector('vPIS')?.textContent || '0')
-    const valorCOFINS = parseFloat(ICMSTot.querySelector('vCOFINS')?.textContent || '0')
+    // Valores totais
+    const valorTotal = parseFloat(extractValue(xmlContent, 'vNF') || '0')
+    const valorICMS = parseFloat(extractValue(xmlContent, 'vICMS') || '0')
+    const valorIPI = parseFloat(extractValue(xmlContent, 'vIPI') || '0')
+    const valorPIS = parseFloat(extractValue(xmlContent, 'vPIS') || '0')
+    const valorCOFINS = parseFloat(extractValue(xmlContent, 'vCOFINS') || '0')
+
+    if (!chaveAcesso || !numeroNfe || !cnpjEmitente) {
+      throw new Error('Dados essenciais da NFe não encontrados no XML')
+    }
 
     console.log('Extracted data:', {
       chaveAcesso,
@@ -98,35 +105,74 @@ Deno.serve(async (req) => {
 
     console.log('NFe data inserted successfully:', nfeData.id)
 
-    // Create accounts payable entry
-    const vencimento = new Date()
-    vencimento.setDate(vencimento.getDate() + 30) // Default 30 days
+    // Extract duplicatas (installments) from XML
+    const dupRegex = /<dup>[\s\S]*?<\/dup>/g
+    const duplicatas = xmlContent.match(dupRegex) || []
+    
+    const installments = []
+    
+    if (duplicatas.length > 0) {
+      // Process each duplicata
+      for (const dup of duplicatas) {
+        const nDup = extractValue(dup, 'nDup')
+        const dVenc = extractValue(dup, 'dVenc')
+        const vDup = parseFloat(extractValue(dup, 'vDup') || '0')
+        
+        if (dVenc && vDup > 0) {
+          const { data: apData, error: apError } = await supabase
+            .from('ap_installments')
+            .insert({
+              nfe_id: nfeData.id,
+              descricao: `NFe ${numeroNfe} - Parcela ${nDup} - ${nomeEmitente}`,
+              fornecedor: nomeEmitente,
+              valor: vDup,
+              data_vencimento: dVenc,
+              categoria: 'NFe'
+            })
+            .select()
+            .single()
 
-    const { data: apData, error: apError } = await supabase
-      .from('ap_installments')
-      .insert({
-        nfe_id: nfeData.id,
-        descricao: `NFe ${numeroNfe} - ${nomeEmitente}`,
-        fornecedor: nomeEmitente,
-        valor: valorTotal,
-        data_vencimento: vencimento.toISOString().split('T')[0],
-        categoria: 'NFe'
-      })
-      .select()
-      .single()
+          if (apError) {
+            console.error('Error inserting AP installment:', apError)
+            throw apError
+          }
+          
+          installments.push(apData.id)
+        }
+      }
+    } else {
+      // No duplicatas found, create single installment with 30 days
+      const vencimento = new Date()
+      vencimento.setDate(vencimento.getDate() + 30)
 
-    if (apError) {
-      console.error('Error inserting AP installment:', apError)
-      throw apError
+      const { data: apData, error: apError } = await supabase
+        .from('ap_installments')
+        .insert({
+          nfe_id: nfeData.id,
+          descricao: `NFe ${numeroNfe} - ${nomeEmitente}`,
+          fornecedor: nomeEmitente,
+          valor: valorTotal,
+          data_vencimento: vencimento.toISOString().split('T')[0],
+          categoria: 'NFe'
+        })
+        .select()
+        .single()
+
+      if (apError) {
+        console.error('Error inserting AP installment:', apError)
+        throw apError
+      }
+      
+      installments.push(apData.id)
     }
 
-    console.log('AP installment created successfully:', apData.id)
+    console.log('AP installments created successfully:', installments)
 
     return new Response(
       JSON.stringify({
         success: true,
         nfeId: nfeData.id,
-        apId: apData.id,
+        installmentIds: installments,
         message: 'NFe processed successfully'
       }),
       {

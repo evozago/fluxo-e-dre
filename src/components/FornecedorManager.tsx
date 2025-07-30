@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Edit, Trash2, Save, Search } from "lucide-react";
+import { Plus, Edit, Trash2, Save, Search, Download, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -211,6 +211,89 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
     setIsModalOpen(true);
   };
 
+  const exportFornecedores = () => {
+    const csvData = fornecedores.map(f => ({
+      Nome: f.nome,
+      'CNPJ/CPF': f.cnpj_cpf || '',
+      Email: f.email || '',
+      Telefone: f.telefone || '',
+      Endereço: f.endereco || '',
+      Ativo: f.ativo ? 'Sim' : 'Não'
+    }));
+
+    const headers = Object.keys(csvData[0] || {});
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => headers.map(header => `"${row[header as keyof typeof row] || ''}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `fornecedores_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const lines = text.split('\n');
+      const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+      
+      const importData = [];
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
+        if (values.length >= headers.length && values[0]) {
+          const fornecedor = {
+            nome: values[0],
+            cnpj_cpf: values[1] || null,
+            email: values[2] || null,
+            telefone: values[3] || null,
+            endereco: values[4] || null,
+            ativo: true
+          };
+          importData.push(fornecedor);
+        }
+      }
+
+      if (importData.length === 0) {
+        toast({
+          title: "Erro",
+          description: "Nenhum dado válido encontrado no arquivo",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('fornecedores' as any)
+        .insert(importData);
+
+      if (error) throw error;
+
+      toast({
+        title: "Importação concluída",
+        description: `${importData.length} fornecedor(es) importado(s) com sucesso`
+      });
+
+      loadFornecedores();
+      onFornecedorChange?.();
+    } catch (error: any) {
+      console.error('Erro na importação:', error);
+      toast({
+        title: "Erro na importação",
+        description: error.message || "Não foi possível importar o arquivo",
+        variant: "destructive"
+      });
+    }
+
+    // Limpar o input
+    event.target.value = '';
+  };
+
   if (loading) {
     return (
       <Card>
@@ -229,10 +312,27 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Fornecedores</CardTitle>
-          <Button onClick={openNewModal}>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Fornecedor
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={exportFornecedores} variant="outline">
+              <Download className="h-4 w-4 mr-2" />
+              Exportar
+            </Button>
+            <Button onClick={() => document.getElementById('import-file')?.click()} variant="outline">
+              <Upload className="h-4 w-4 mr-2" />
+              Importar
+            </Button>
+            <Button onClick={openNewModal}>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Fornecedor
+            </Button>
+          </div>
+          <input
+            id="import-file"
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            onChange={handleImportFile}
+            style={{ display: 'none' }}
+          />
         </div>
         
         <div className="flex gap-4 mt-4">

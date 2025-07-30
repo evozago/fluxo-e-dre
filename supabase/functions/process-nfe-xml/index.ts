@@ -121,6 +121,38 @@ Deno.serve(async (req) => {
 
     console.log('NFe data inserted successfully:', nfeData.id)
 
+    // Create or update fornecedor automatically
+    let fornecedorId = null
+    if (cnpjEmitente && nomeEmitente) {
+      const { data: existingFornecedor } = await supabase
+        .from('fornecedores')
+        .select('id')
+        .eq('cnpj_cpf', cnpjEmitente)
+        .maybeSingle()
+
+      if (existingFornecedor) {
+        fornecedorId = existingFornecedor.id
+        console.log('Using existing fornecedor:', fornecedorId)
+      } else {
+        const { data: newFornecedor, error: fornecedorError } = await supabase
+          .from('fornecedores')
+          .insert({
+            nome: nomeEmitente,
+            cnpj_cpf: cnpjEmitente,
+            ativo: true
+          })
+          .select()
+          .single()
+
+        if (fornecedorError) {
+          console.error('Error creating fornecedor:', fornecedorError)
+        } else {
+          fornecedorId = newFornecedor.id
+          console.log('Created new fornecedor:', fornecedorId)
+        }
+      }
+    }
+
     // Extract duplicatas (installments) from XML
     const dupRegex = /<dup>[\s\S]*?<\/dup>/g
     const duplicatas = xmlContent.match(dupRegex) || []

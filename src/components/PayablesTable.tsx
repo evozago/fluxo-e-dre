@@ -271,6 +271,9 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
       return;
     }
 
+    console.log('Dados de edição em massa:', bulkEditData);
+    console.log('Itens selecionados:', selectedItems);
+
     try {
       for (const itemId of selectedItems) {
         const item = installments.find(i => i.id === itemId);
@@ -300,12 +303,17 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
             }
           }
 
+          console.log(`Atualizando item ${itemId} com:`, updates);
+
           const { error } = await supabase
             .from('ap_installments')
             .update(updates)
             .eq('id', itemId);
 
-          if (error) throw error;
+          if (error) {
+            console.error(`Erro ao atualizar item ${itemId}:`, error);
+            throw error;
+          }
         }
       }
 

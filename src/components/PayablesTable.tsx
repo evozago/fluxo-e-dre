@@ -290,7 +290,17 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
           if (bulkEditData.descricao) updates.descricao = bulkEditData.descricao;
           if (bulkEditData.fornecedor) updates.fornecedor = bulkEditData.fornecedor;
           if (bulkEditData.numero_documento) updates.numero_documento = bulkEditData.numero_documento;
-          if (bulkEditData.status) updates.status = bulkEditData.status;
+          if (bulkEditData.status) {
+            updates.status = bulkEditData.status;
+            // Se está marcando como pago, adicionar data_pagamento
+            if (bulkEditData.status === 'pago' && !item.data_pagamento) {
+              updates.data_pagamento = new Date().toISOString().split('T')[0];
+            }
+            // Se está desmarcando como pago, remover data_pagamento
+            if (bulkEditData.status !== 'pago') {
+              updates.data_pagamento = null;
+            }
+          }
           if (bulkEditData.eh_recorrente !== undefined) updates.eh_recorrente = bulkEditData.eh_recorrente;
           if (bulkEditData.tipo_recorrencia && bulkEditData.eh_recorrente) updates.tipo_recorrencia = bulkEditData.tipo_recorrencia;
           if (bulkEditData.valor_fixo !== undefined && bulkEditData.eh_recorrente) updates.valor_fixo = bulkEditData.valor_fixo;

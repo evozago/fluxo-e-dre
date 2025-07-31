@@ -88,24 +88,41 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
       };
 
       if (formData.recurring) {
-        // Despesa recorrente
-        const installmentData = {
-          ...baseData,
-          data_vencimento: formData.dataInicial,
-          eh_recorrente: true,
-          tipo_recorrencia: 'mensal',
-          valor_fixo: true
-        };
+        // Despesa recorrente - gerar parcelas mensais
+        const dataInicial = new Date(formData.dataInicial);
+        const dataFinal = formData.dataFinal ? new Date(formData.dataFinal) : null;
+        
+        // Se não há data final, gerar 12 meses
+        const numMeses = dataFinal ? 
+          Math.ceil((dataFinal.getTime() - dataInicial.getTime()) / (1000 * 60 * 60 * 24 * 30)) + 1 : 
+          12;
+
+        const installments = [];
+        for (let i = 0; i < numMeses; i++) {
+          const dataVencimento = new Date(dataInicial);
+          dataVencimento.setMonth(dataVencimento.getMonth() + i);
+          
+          // Para despesas recorrentes, só gerar até a data final se especificada
+          if (dataFinal && dataVencimento > dataFinal) break;
+          
+          installments.push({
+            ...baseData,
+            data_vencimento: dataVencimento.toISOString().split('T')[0],
+            eh_recorrente: true,
+            tipo_recorrencia: 'mensal',
+            valor_fixo: true
+          });
+        }
 
         const { error } = await supabase
           .from('ap_installments')
-          .insert(installmentData);
+          .insert(installments);
 
         if (error) throw error;
 
         toast({
           title: "Despesa recorrente criada com sucesso",
-          description: `Despesa recorrente de ${formData.description} no valor de R$ ${parseFloat(formData.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} cadastrada`
+          description: `${installments.length} parcelas mensais de ${formData.description} no valor de R$ ${parseFloat(formData.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} cadastradas`
         });
       } else if (formData.isInstallment) {
         // Despesa parcelada

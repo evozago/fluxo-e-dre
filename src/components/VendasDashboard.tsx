@@ -210,22 +210,10 @@ export const VendasDashboard = ({ onDataChange }: VendasDashboardProps) => {
   return (
     <div className="space-y-6">
       {/* Cards de Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Vendas Hoje</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(getTodaySales())}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Vendas do Mês</CardTitle>
+            <CardTitle className="text-sm font-medium">Vendas do Mês até Hoje</CardTitle>
             <ShoppingCart className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>

@@ -22,7 +22,9 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
     dueDate: "",
     category: "",
     recurring: false,
-    entidadeId: ""
+    entidadeId: "",
+    formaPagamento: "",
+    dadosPagamento: ""
   });
   const [entidades, setEntidades] = useState<{id: string, nome: string, tipo: string}[]>([]);
   const { toast } = useToast();
@@ -58,6 +60,8 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
         entidade_id: formData.entidadeId,
         eh_recorrente: formData.recurring,
         tipo_recorrencia: formData.recurring ? 'mensal' : null,
+        forma_pagamento: formData.formaPagamento || null,
+        dados_pagamento: formData.dadosPagamento || null,
         status: 'aberto'
       };
 
@@ -79,7 +83,9 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
         dueDate: "",
         category: "",
         recurring: false,
-        entidadeId: ""
+        entidadeId: "",
+        formaPagamento: "",
+        dadosPagamento: ""
       });
       onOpenChange(false);
     } catch (error) {
@@ -183,6 +189,42 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
                 <SelectItem value="Geral">Geral</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="formaPagamento">Forma de Pagamento</Label>
+            <Select onValueChange={(value) => setFormData(prev => ({ ...prev, formaPagamento: value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a forma de pagamento" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PIX">PIX</SelectItem>
+                <SelectItem value="Boleto">Boleto Bancário</SelectItem>
+                <SelectItem value="Transferência">Transferência Bancária</SelectItem>
+                <SelectItem value="Cartão de Débito">Cartão de Débito</SelectItem>
+                <SelectItem value="Cartão de Crédito">Cartão de Crédito</SelectItem>
+                <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                <SelectItem value="Cheque">Cheque</SelectItem>
+                <SelectItem value="Débito Automático">Débito Automático</SelectItem>
+                <SelectItem value="Outras">Outras</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="dadosPagamento">Dados do Pagamento</Label>
+            <Input
+              id="dadosPagamento"
+              value={formData.dadosPagamento}
+              onChange={(e) => setFormData(prev => ({ ...prev, dadosPagamento: e.target.value }))}
+              placeholder={
+                formData.formaPagamento === 'PIX' ? 'Chave PIX (CPF, email, telefone ou chave aleatória)' :
+                formData.formaPagamento === 'Boleto' ? 'Código de barras ou linha digitável' :
+                formData.formaPagamento === 'Transferência' ? 'Banco, agência e conta' :
+                formData.formaPagamento === 'Cartão de Débito' || formData.formaPagamento === 'Cartão de Crédito' ? 'Últimos 4 dígitos do cartão' :
+                'Informações adicionais sobre o pagamento'
+              }
+            />
           </div>
 
           <div className="flex items-center space-x-2">

@@ -19,6 +19,8 @@ interface Installment {
   status: string;
   categoria: string;
   observacoes: string | null;
+  forma_pagamento: string | null;
+  dados_pagamento: string | null;
   numero_parcela: number;
   total_parcelas: number;
   valor_total_titulo: number;

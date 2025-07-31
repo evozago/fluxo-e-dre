@@ -29,6 +29,7 @@ interface Installment {
   observacoes: string | null;
   nfe_id: string | null;
   forma_pagamento: string | null;
+  dados_pagamento: string | null;
   banco: string | null;
   numero_documento: string | null;
   entidade_id: string;
@@ -402,6 +403,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
       Status: item.status,
       Categoria: item.categoria,
       'Forma Pagamento': item.forma_pagamento || '',
+      'Dados Pagamento': item.dados_pagamento || '',
       Banco: item.banco || '',
       'Número Documento': item.numero_documento || '',
       Observações: item.observacoes || '',
@@ -472,6 +474,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
             data_vencimento: row['Data Vencimento'],
             categoria: row.Categoria || 'Geral',
             forma_pagamento: row['Forma Pagamento'] || null,
+            dados_pagamento: row['Dados Pagamento'] || null,
             banco: row.Banco || null,
             numero_documento: row['Número Documento'] || null,
             observacoes: row.Observações || null,

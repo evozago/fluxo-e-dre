@@ -130,6 +130,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
 
   const loadInstallments = async () => {
     try {
+      console.log('Carregando parcelas...');
       setLoading(true);
       const { data, error } = await supabase
         .from('ap_installments')
@@ -140,6 +141,8 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
         .order('data_vencimento', { ascending: true });
 
       if (error) throw error;
+      console.log('Dados carregados:', data?.length, 'parcelas');
+      console.log('Status das primeiras 3 parcelas:', data?.slice(0, 3)?.map(p => ({ id: p.id, status: p.status })));
       setInstallments(data || []);
     } catch (error) {
       console.error('Erro ao carregar parcelas:', error);
@@ -317,13 +320,19 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
         }
       }
 
+      console.log('Todas as atualizações concluídas. Recarregando dados...');
+      
+      // Aguardar um pequeno delay antes de recarregar para garantir que o banco foi atualizado
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      await loadInstallments();
+      onDataChange();
+      
       toast({
         title: "Edição em Massa Concluída",
         description: `${selectedItems.length} itens foram atualizados com sucesso`
       });
 
-      loadInstallments();
-      onDataChange();
       setBulkEditOpen(false);
       setSelectedItems([]);
       setBulkEditData({

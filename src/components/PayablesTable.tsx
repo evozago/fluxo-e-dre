@@ -22,6 +22,7 @@ interface Installment {
   valor: number;
   data_vencimento: string;
   data_pagamento: string | null;
+  data_hora_pagamento: string | null;
   status: string;
   categoria: string;
   observacoes: string | null;
@@ -292,13 +293,15 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
           if (bulkEditData.numero_documento) updates.numero_documento = bulkEditData.numero_documento;
           if (bulkEditData.status) {
             updates.status = bulkEditData.status;
-            // Se está marcando como pago, adicionar data_pagamento
+            // Se está marcando como pago, adicionar data_pagamento e data_hora_pagamento
             if (bulkEditData.status === 'pago' && !item.data_pagamento) {
               updates.data_pagamento = new Date().toISOString().split('T')[0];
+              updates.data_hora_pagamento = new Date().toISOString();
             }
-            // Se está desmarcando como pago, remover data_pagamento
+            // Se está desmarcando como pago, remover data_pagamento e data_hora_pagamento
             if (bulkEditData.status !== 'pago') {
               updates.data_pagamento = null;
+              updates.data_hora_pagamento = null;
             }
           }
           if (bulkEditData.eh_recorrente !== undefined) updates.eh_recorrente = bulkEditData.eh_recorrente;
@@ -553,6 +556,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
         .from('ap_installments')
         .update({
           data_pagamento: paymentDate,
+          data_hora_pagamento: new Date().toISOString(),
           status: 'pago',
           valor: finalAmount,
           forma_pagamento: paymentMethod,
@@ -880,16 +884,17 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                       Vencimento
                       {getSortIcon('data_vencimento')}
                     </div>
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-muted/50" 
-                    onClick={() => handleSort('status')}
-                  >
-                    <div className="flex items-center gap-1">
-                      Status
-                      {getSortIcon('status')}
-                    </div>
-                  </TableHead>
+                   </TableHead>
+                   <TableHead>Data/Hora Pagamento</TableHead>
+                   <TableHead 
+                     className="cursor-pointer hover:bg-muted/50" 
+                     onClick={() => handleSort('status')}
+                   >
+                     <div className="flex items-center gap-1">
+                       Status
+                       {getSortIcon('status')}
+                     </div>
+                   </TableHead>
                   <TableHead 
                     className="cursor-pointer hover:bg-muted/50" 
                     onClick={() => handleSort('categoria')}
@@ -976,8 +981,23 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                         {installment.numero_documento || '-'}
                       </div>
                     </TableCell>
-                    <TableCell>{formatDate(installment.data_vencimento)}</TableCell>
-                    <TableCell>{getStatusBadge(installment.status)}</TableCell>
+                     <TableCell>{formatDate(installment.data_vencimento)}</TableCell>
+                     <TableCell>
+                       {installment.data_hora_pagamento ? (
+                         <div className="text-sm">
+                           {new Date(installment.data_hora_pagamento).toLocaleString('pt-BR', {
+                             day: '2-digit',
+                             month: '2-digit',
+                             year: 'numeric',
+                             hour: '2-digit',
+                             minute: '2-digit'
+                           })}
+                         </div>
+                       ) : (
+                         <span className="text-muted-foreground">-</span>
+                       )}
+                     </TableCell>
+                     <TableCell>{getStatusBadge(installment.status)}</TableCell>
                     <TableCell>{installment.categoria}</TableCell>
                     <TableCell>
                       <div className="text-sm">

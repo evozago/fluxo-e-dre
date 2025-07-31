@@ -20,6 +20,7 @@ export type Database = {
           categoria: string | null
           comprovante_path: string | null
           created_at: string
+          data_hora_pagamento: string | null
           data_pagamento: string | null
           data_vencimento: string
           descricao: string
@@ -45,6 +46,7 @@ export type Database = {
           categoria?: string | null
           comprovante_path?: string | null
           created_at?: string
+          data_hora_pagamento?: string | null
           data_pagamento?: string | null
           data_vencimento: string
           descricao: string
@@ -70,6 +72,7 @@ export type Database = {
           categoria?: string | null
           comprovante_path?: string | null
           created_at?: string
+          data_hora_pagamento?: string | null
           data_pagamento?: string | null
           data_vencimento?: string
           descricao?: string

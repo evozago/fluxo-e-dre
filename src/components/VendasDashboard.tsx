@@ -33,10 +33,7 @@ export const VendasDashboard = ({ onDataChange }: VendasDashboardProps) => {
   const [workingDaysLeft, setWorkingDaysLeft] = useState(0);
   const [formData, setFormData] = useState({
     vendedora_id: "",
-    data_venda: new Date().toISOString().split('T')[0],
     valor_venda: "",
-    forma_pagamento: "",
-    cliente_nome: "",
     observacoes: ""
   });
   const { toast } = useToast();
@@ -121,10 +118,10 @@ export const VendasDashboard = ({ onDataChange }: VendasDashboardProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.vendedora_id || !formData.valor_venda || !formData.data_venda) {
+    if (!formData.vendedora_id || !formData.valor_venda) {
       toast({
         title: "Erro",
-        description: "Vendedora, valor e data são obrigatórios",
+        description: "Vendedora e valor são obrigatórios",
         variant: "destructive"
       });
       return;
@@ -133,10 +130,8 @@ export const VendasDashboard = ({ onDataChange }: VendasDashboardProps) => {
     try {
       const vendaData = {
         vendedora_id: formData.vendedora_id,
-        data_venda: formData.data_venda,
+        data_venda: new Date().toISOString().split('T')[0], // Data atual
         valor_venda: parseFloat(formData.valor_venda.replace(',', '.')),
-        forma_pagamento: formData.forma_pagamento || null,
-        cliente_nome: formData.cliente_nome || null,
         observacoes: formData.observacoes || null
       };
 
@@ -148,7 +143,7 @@ export const VendasDashboard = ({ onDataChange }: VendasDashboardProps) => {
 
       toast({
         title: "Venda registrada",
-        description: "A venda foi registrada com sucesso"
+        description: "O valor mensal foi registrado com sucesso"
       });
 
       loadVendas();
@@ -156,17 +151,14 @@ export const VendasDashboard = ({ onDataChange }: VendasDashboardProps) => {
       setModalOpen(false);
       setFormData({
         vendedora_id: "",
-        data_venda: new Date().toISOString().split('T')[0],
         valor_venda: "",
-        forma_pagamento: "",
-        cliente_nome: "",
         observacoes: ""
       });
     } catch (error: any) {
       console.error('Erro ao registrar venda:', error);
       toast({
         title: "Erro",
-        description: error.message || "Não foi possível registrar a venda",
+        description: error.message || "Não foi possível registrar o valor",
         variant: "destructive"
       });
     }
@@ -269,17 +261,16 @@ export const VendasDashboard = ({ onDataChange }: VendasDashboardProps) => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Data</TableHead>
+                  <TableHead>Data Atualização</TableHead>
                   <TableHead>Vendedora</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Forma Pagamento</TableHead>
-                  <TableHead>Cliente</TableHead>
+                  <TableHead>Valor Vendido</TableHead>
+                  <TableHead>Observações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {vendas.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                       Nenhuma venda registrada este mês
                     </TableCell>
                   </TableRow>
@@ -291,12 +282,7 @@ export const VendasDashboard = ({ onDataChange }: VendasDashboardProps) => {
                       <TableCell className="font-bold text-green-600">
                         {formatCurrency(venda.valor_venda)}
                       </TableCell>
-                      <TableCell>
-                        {venda.forma_pagamento ? (
-                          <Badge variant="outline">{venda.forma_pagamento}</Badge>
-                        ) : '-'}
-                      </TableCell>
-                      <TableCell>{venda.cliente_nome || '-'}</TableCell>
+                      <TableCell>{venda.observacoes || '-'}</TableCell>
                     </TableRow>
                   ))
                 )}
@@ -322,7 +308,7 @@ export const VendasDashboard = ({ onDataChange }: VendasDashboardProps) => {
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              <div className="md:col-span-2">
                 <Label htmlFor="vendedora">Vendedora *</Label>
                 <select
                   id="vendedora"
@@ -340,19 +326,8 @@ export const VendasDashboard = ({ onDataChange }: VendasDashboardProps) => {
                 </select>
               </div>
               
-              <div>
-                <Label htmlFor="data_venda">Data da Venda *</Label>
-                <Input
-                  id="data_venda"
-                  type="date"
-                  value={formData.data_venda}
-                  onChange={(e) => setFormData({...formData, data_venda: e.target.value})}
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="valor_venda">Valor Vendido *</Label>
+              <div className="md:col-span-2">
+                <Label htmlFor="valor_venda">Valor Vendido no Mês *</Label>
                 <Input
                   id="valor_venda"
                   type="number"
@@ -363,41 +338,13 @@ export const VendasDashboard = ({ onDataChange }: VendasDashboardProps) => {
                   required
                 />
               </div>
-              
-              <div>
-                <Label htmlFor="forma_pagamento">Forma de Pagamento</Label>
-                <select
-                  id="forma_pagamento"
-                  value={formData.forma_pagamento}
-                  onChange={(e) => setFormData({...formData, forma_pagamento: e.target.value})}
-                  className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md"
-                >
-                  <option value="">Selecione a forma</option>
-                  <option value="Dinheiro">Dinheiro</option>
-                  <option value="PIX">PIX</option>
-                  <option value="Cartão de Débito">Cartão de Débito</option>
-                  <option value="Cartão de Crédito">Cartão de Crédito</option>
-                  <option value="Transferência Bancária">Transferência Bancária</option>
-                  <option value="Cheque">Cheque</option>
-                </select>
-              </div>
-            </div>
-            
-            <div>
-              <Label htmlFor="cliente_nome">Nome do Cliente</Label>
-              <Input
-                id="cliente_nome"
-                placeholder="Nome do cliente (opcional)"
-                value={formData.cliente_nome}
-                onChange={(e) => setFormData({...formData, cliente_nome: e.target.value})}
-              />
             </div>
             
             <div>
               <Label htmlFor="observacoes">Observações</Label>
               <Input
                 id="observacoes"
-                placeholder="Observações sobre a venda (opcional)"
+                placeholder="Observações sobre o valor mensal (opcional)"
                 value={formData.observacoes}
                 onChange={(e) => setFormData({...formData, observacoes: e.target.value})}
               />

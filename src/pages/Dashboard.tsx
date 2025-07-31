@@ -17,6 +17,8 @@ import { Reports } from "@/components/Reports";
 import { EntidadeManager } from "@/components/EntidadeManager";
 import { ConfigurationSettings } from "@/components/ConfigurationSettings";
 import { SalesSystem } from "@/components/SalesSystem";
+import { MarcasManager } from "@/components/MarcasManager";
+import { ProdutosManager } from "@/components/ProdutosManager";
 
 interface DashboardStats {
   totalAberto: number;
@@ -193,9 +195,11 @@ const Dashboard = () => {
 
         {/* Main Content */}
         <Tabs defaultValue="contas" className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="contas">Contas a Pagar</TabsTrigger>
             <TabsTrigger value="fornecedores">Fornecedores</TabsTrigger>
+            <TabsTrigger value="marcas">Marcas</TabsTrigger>
+            <TabsTrigger value="produtos">Produtos</TabsTrigger>
             <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
             <TabsTrigger value="entidades">Entidades</TabsTrigger>
             <TabsTrigger value="vendas">Vendas</TabsTrigger>
@@ -236,6 +240,14 @@ const Dashboard = () => {
 
           <TabsContent value="fornecedores" className="space-y-4">
             <FornecedorManager onFornecedorChange={loadDashboardStats} />
+          </TabsContent>
+
+          <TabsContent value="marcas" className="space-y-4">
+            <MarcasManager />
+          </TabsContent>
+
+          <TabsContent value="produtos" className="space-y-4">
+            <ProdutosManager />
           </TabsContent>
 
           <TabsContent value="relatorios" className="space-y-4">

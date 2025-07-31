@@ -110,6 +110,30 @@ export type Database = {
           },
         ]
       }
+      categorias_produtos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       config_vendas: {
         Row: {
           created_at: string
@@ -133,6 +157,33 @@ export type Database = {
           id?: string
           meta_loja_mensal?: number | null
           observacoes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      detalhes_produtos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          tipo?: string
           updated_at?: string
         }
         Relationships: []
@@ -205,6 +256,41 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      marcas: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          fornecedor_id: string | null
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          fornecedor_id?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          fornecedor_id?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marcas_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       meios_pagamento_vendas: {
         Row: {
@@ -334,6 +420,227 @@ export type Database = {
         }
         Relationships: []
       }
+      pedidos_produtos: {
+        Row: {
+          arquivo_origem: string | null
+          codigo_barras: string | null
+          cor: string | null
+          created_at: string
+          custo_unitario: number
+          data_pedido: string | null
+          descricao: string | null
+          fornecedor_id: string | null
+          id: string
+          marca_id: string | null
+          observacoes: string | null
+          produto_id: string | null
+          quantidade: number
+          referencia: string
+          status: string
+          tamanho: string | null
+          updated_at: string
+        }
+        Insert: {
+          arquivo_origem?: string | null
+          codigo_barras?: string | null
+          cor?: string | null
+          created_at?: string
+          custo_unitario?: number
+          data_pedido?: string | null
+          descricao?: string | null
+          fornecedor_id?: string | null
+          id?: string
+          marca_id?: string | null
+          observacoes?: string | null
+          produto_id?: string | null
+          quantidade?: number
+          referencia: string
+          status?: string
+          tamanho?: string | null
+          updated_at?: string
+        }
+        Update: {
+          arquivo_origem?: string | null
+          codigo_barras?: string | null
+          cor?: string | null
+          created_at?: string
+          custo_unitario?: number
+          data_pedido?: string | null
+          descricao?: string | null
+          fornecedor_id?: string | null
+          id?: string
+          marca_id?: string | null
+          observacoes?: string | null
+          produto_id?: string | null
+          quantidade?: number
+          referencia?: string
+          status?: string
+          tamanho?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_produtos_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_produtos_marca_id_fkey"
+            columns: ["marca_id"]
+            isOneToOne: false
+            referencedRelation: "marcas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_produtos_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produto_variacoes: {
+        Row: {
+          codigo_barras_variacao: string | null
+          cor: string
+          created_at: string
+          custo_unitario: number
+          id: string
+          preco_venda: number
+          produto_id: string | null
+          quantidade_estoque: number
+          sku: string | null
+          tamanho: string
+          updated_at: string
+        }
+        Insert: {
+          codigo_barras_variacao?: string | null
+          cor: string
+          created_at?: string
+          custo_unitario?: number
+          id?: string
+          preco_venda?: number
+          produto_id?: string | null
+          quantidade_estoque?: number
+          sku?: string | null
+          tamanho: string
+          updated_at?: string
+        }
+        Update: {
+          codigo_barras_variacao?: string | null
+          cor?: string
+          created_at?: string
+          custo_unitario?: number
+          id?: string
+          preco_venda?: number
+          produto_id?: string | null
+          quantidade_estoque?: number
+          sku?: string | null
+          tamanho?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produto_variacoes_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produtos: {
+        Row: {
+          categoria_id: string | null
+          codigo_barras: string | null
+          created_at: string
+          custo_medio: number | null
+          detalhes: string[] | null
+          genero: string
+          id: string
+          marca_id: string | null
+          nfe_id: string | null
+          observacoes: string | null
+          origem: string
+          preco_venda_base: number | null
+          referencia: string | null
+          status: string
+          tipo_manga_id: string | null
+          titulo_completo: string
+          updated_at: string
+        }
+        Insert: {
+          categoria_id?: string | null
+          codigo_barras?: string | null
+          created_at?: string
+          custo_medio?: number | null
+          detalhes?: string[] | null
+          genero: string
+          id?: string
+          marca_id?: string | null
+          nfe_id?: string | null
+          observacoes?: string | null
+          origem?: string
+          preco_venda_base?: number | null
+          referencia?: string | null
+          status?: string
+          tipo_manga_id?: string | null
+          titulo_completo: string
+          updated_at?: string
+        }
+        Update: {
+          categoria_id?: string | null
+          codigo_barras?: string | null
+          created_at?: string
+          custo_medio?: number | null
+          detalhes?: string[] | null
+          genero?: string
+          id?: string
+          marca_id?: string | null
+          nfe_id?: string | null
+          observacoes?: string | null
+          origem?: string
+          preco_venda_base?: number | null
+          referencia?: string | null
+          status?: string
+          tipo_manga_id?: string | null
+          titulo_completo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produtos_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produtos_marca_id_fkey"
+            columns: ["marca_id"]
+            isOneToOne: false
+            referencedRelation: "marcas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produtos_nfe_id_fkey"
+            columns: ["nfe_id"]
+            isOneToOne: false
+            referencedRelation: "nfe_data"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produtos_tipo_manga_id_fkey"
+            columns: ["tipo_manga_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_manga"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       representantes_contatos: {
         Row: {
           ativo: boolean
@@ -380,6 +687,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tipos_manga: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       vendas: {
         Row: {

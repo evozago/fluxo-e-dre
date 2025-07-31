@@ -55,6 +55,8 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+  const [startDateFilter, setStartDateFilter] = useState("");
+  const [endDateFilter, setEndDateFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [editingInstallment, setEditingInstallment] = useState<Installment | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
@@ -124,7 +126,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
 
   useEffect(() => {
     filterInstallments();
-  }, [installments, searchTerm, dateFilter, statusFilter, sortField, sortDirection]);
+  }, [installments, searchTerm, dateFilter, startDateFilter, endDateFilter, statusFilter, sortField, sortDirection]);
 
   const loadInstallments = async () => {
     try {
@@ -191,13 +193,24 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
       );
     }
 
-    if (dateFilter) {
-      filtered = filtered.filter(item => item.data_vencimento === dateFilter);
-    }
+      if (dateFilter) {
+        filtered = filtered.filter(item => item.data_vencimento === dateFilter);
+      }
 
-    if (statusFilter !== "todos") {
-      filtered = filtered.filter(item => item.status === statusFilter);
-    }
+      // Filtro por período de datas
+      if (startDateFilter && endDateFilter) {
+        filtered = filtered.filter(item => 
+          item.data_vencimento >= startDateFilter && item.data_vencimento <= endDateFilter
+        );
+      } else if (startDateFilter) {
+        filtered = filtered.filter(item => item.data_vencimento >= startDateFilter);
+      } else if (endDateFilter) {
+        filtered = filtered.filter(item => item.data_vencimento <= endDateFilter);
+      }
+
+      if (statusFilter !== "todos") {
+        filtered = filtered.filter(item => item.status === statusFilter);
+      }
 
     // Aplicar ordenação se definida
     if (sortField) {
@@ -685,7 +698,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
         </div>
         
         {/* Filtros */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mt-4">
           <div>
             <Label htmlFor="search">Pesquisar</Label>
             <div className="relative">
@@ -701,12 +714,32 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
           </div>
           
           <div>
-            <Label htmlFor="dateFilter">Data Vencimento</Label>
+            <Label htmlFor="dateFilter">Data Vencimento Específica</Label>
             <Input
               id="dateFilter"
               type="date"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="startDateFilter">Data Inicial</Label>
+            <Input
+              id="startDateFilter"
+              type="date"
+              value={startDateFilter}
+              onChange={(e) => setStartDateFilter(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="endDateFilter">Data Final</Label>
+            <Input
+              id="endDateFilter"
+              type="date"
+              value={endDateFilter}
+              onChange={(e) => setEndDateFilter(e.target.value)}
             />
           </div>
           
@@ -731,6 +764,8 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
               onClick={() => {
                 setSearchTerm("");
                 setDateFilter("");
+                setStartDateFilter("");
+                setEndDateFilter("");
                 setStatusFilter("todos");
               }}
             >

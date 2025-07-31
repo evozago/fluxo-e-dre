@@ -24,6 +24,9 @@ interface Installment {
   numero_parcela: number;
   total_parcelas: number;
   valor_total_titulo: number;
+  eh_recorrente: boolean;
+  tipo_recorrencia: string | null;
+  valor_fixo: boolean;
 }
 
 interface TitleDetailModalProps {
@@ -200,23 +203,32 @@ export const TitleDetailModal = ({ isOpen, onClose, titleInfo, onDataChange }: T
               {loading ? (
                 <div className="text-center py-4">Carregando...</div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Parcela</TableHead>
-                      <TableHead>Valor</TableHead>
-                      <TableHead>Vencimento</TableHead>
-                      <TableHead>Pagamento</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Observações</TableHead>
-                      <TableHead>Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Parcela</TableHead>
+                        <TableHead>Valor</TableHead>
+                        <TableHead>Vencimento</TableHead>
+                        <TableHead>Pagamento</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Forma Pgto</TableHead>
+                        <TableHead>Dados Pgto</TableHead>
+                        <TableHead>Observações</TableHead>
+                        <TableHead>Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
                   <TableBody>
                     {installments.map((installment) => (
                       <TableRow key={installment.id}>
                         <TableCell>
-                          {installment.numero_parcela}/{installment.total_parcelas}
+                          {installment.eh_recorrente ? (
+                            <div className="flex items-center gap-1">
+                              <span className="text-sm text-blue-600 font-medium">Recorrente</span>
+                              <span className="text-xs text-muted-foreground">({installment.tipo_recorrencia})</span>
+                            </div>
+                          ) : (
+                            `${installment.numero_parcela}/${installment.total_parcelas}`
+                          )}
                         </TableCell>
                         <TableCell>{formatCurrency(installment.valor)}</TableCell>
                         <TableCell>{formatDate(installment.data_vencimento)}</TableCell>
@@ -224,6 +236,16 @@ export const TitleDetailModal = ({ isOpen, onClose, titleInfo, onDataChange }: T
                           {installment.data_pagamento ? formatDate(installment.data_pagamento) : "-"}
                         </TableCell>
                         <TableCell>{getStatusBadge(installment.status)}</TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {installment.forma_pagamento || '-'}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {installment.dados_pagamento || '-'}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           {editingInstallmentId === installment.id ? (
                             <div className="space-y-2">

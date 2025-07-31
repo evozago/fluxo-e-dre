@@ -1010,18 +1010,18 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                     <TableCell>
                       {installment.valor_total_titulo ? formatCurrency(installment.valor_total_titulo) : formatCurrency(installment.valor)}
                     </TableCell>
-                    <TableCell>
-                      {installment.total_parcelas > 1 ? 
-                        `${installment.numero_parcela}/${installment.total_parcelas}` : 
-                        '1/1'
-                      }
-                      {installment.eh_recorrente && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Repeat className="h-3 w-3" />
-                          Recorrente
-                        </div>
-                      )}
-                    </TableCell>
+                     <TableCell>
+                       {installment.eh_recorrente ? (
+                         <div className="flex items-center gap-1">
+                           <Repeat className="h-3 w-3 text-blue-600" />
+                           <span className="text-sm text-blue-600 font-medium">Recorrente</span>
+                           <span className="text-xs text-muted-foreground">({installment.tipo_recorrencia})</span>
+                         </div>
+                       ) : installment.total_parcelas > 1 ? 
+                         `${installment.numero_parcela}/${installment.total_parcelas}` : 
+                         '1/1'
+                       }
+                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
                         {installment.numero_documento || '-'}
@@ -1053,12 +1053,19 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                         </div>
                       </div>
                     </TableCell>
-                     <TableCell>
-                       {installment.forma_pagamento || '-'}
-                       {installment.banco && (
-                         <div className="text-xs text-muted-foreground">{installment.banco}</div>
-                       )}
-                     </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {installment.forma_pagamento || '-'}
+                          {installment.dados_pagamento && (
+                            <div className="text-xs text-muted-foreground">
+                              {installment.dados_pagamento}
+                            </div>
+                          )}
+                          {installment.banco && (
+                            <div className="text-xs text-muted-foreground">{installment.banco}</div>
+                          )}
+                        </div>
+                      </TableCell>
                      <TableCell>
                        <div className="text-sm">
                          {new Date(installment.created_at).toLocaleString('pt-BR', {
@@ -1243,83 +1250,136 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                                        valor_total_titulo: parseFloat(e.target.value)
                                      })}
                                    />
-                                 </div>
+                                  </div>
 
-                                 <div className="grid grid-cols-2 gap-4">
-                                   <div>
-                                     <Label htmlFor="editNumeroParcela">Parcela Número</Label>
-                                     <Input
-                                       id="editNumeroParcela"
-                                       type="number"
-                                       min="1"
-                                       value={editingInstallment.numero_parcela || 1}
-                                       onChange={(e) => setEditingInstallment({
-                                         ...editingInstallment,
-                                         numero_parcela: parseInt(e.target.value)
-                                       })}
-                                     />
-                                   </div>
-                                   <div>
-                                     <Label htmlFor="editTotalParcelas">Total de Parcelas</Label>
-                                     <Input
-                                       id="editTotalParcelas"
-                                       type="number"
-                                       min="1"
-                                       value={editingInstallment.total_parcelas || 1}
-                                       onChange={(e) => setEditingInstallment({
-                                         ...editingInstallment,
-                                         total_parcelas: parseInt(e.target.value)
-                                       })}
-                                     />
-                                   </div>
-                                 </div>
+                                  {/* Campos específicos para despesas recorrentes */}
+                                  {editingInstallment.eh_recorrente ? (
+                                    <div className="space-y-4 p-4 border rounded-lg bg-blue-50">
+                                      <div className="flex items-center gap-2">
+                                        <Repeat className="h-4 w-4 text-blue-600" />
+                                        <span className="font-medium text-blue-800">Despesa Recorrente</span>
+                                      </div>
+                                      
+                                      <div>
+                                        <Label htmlFor="editTipoRecorrencia">Tipo de Recorrência</Label>
+                                        <select
+                                          id="editTipoRecorrencia"
+                                          value={editingInstallment.tipo_recorrencia || "mensal"}
+                                          onChange={(e) => setEditingInstallment({
+                                            ...editingInstallment,
+                                            tipo_recorrencia: e.target.value
+                                          })}
+                                          className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md"
+                                        >
+                                          <option value="mensal">Mensal</option>
+                                          <option value="bimestral">Bimestral</option>
+                                          <option value="trimestral">Trimestral</option>
+                                          <option value="semestral">Semestral</option>
+                                          <option value="anual">Anual</option>
+                                        </select>
+                                      </div>
 
-                                 <div className="flex items-center space-x-2">
-                                   <Checkbox
-                                     id="editRecorrente"
-                                     checked={editingInstallment.eh_recorrente || false}
-                                     onCheckedChange={(checked) => setEditingInstallment({
-                                       ...editingInstallment,
-                                       eh_recorrente: checked as boolean
-                                     })}
-                                   />
-                                   <Label htmlFor="editRecorrente">Despesa Recorrente</Label>
-                                 </div>
+                                      <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                          id="editValorFixo"
+                                          checked={editingInstallment.valor_fixo || false}
+                                          onCheckedChange={(checked) => setEditingInstallment({
+                                            ...editingInstallment,
+                                            valor_fixo: checked as boolean
+                                          })}
+                                        />
+                                        <Label htmlFor="editValorFixo">Valor Fixo</Label>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    /* Campos para despesas parceladas */
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div>
+                                        <Label htmlFor="editNumeroParcela">Parcela Número</Label>
+                                        <Input
+                                          id="editNumeroParcela"
+                                          type="number"
+                                          min="1"
+                                          value={editingInstallment.numero_parcela || 1}
+                                          onChange={(e) => setEditingInstallment({
+                                            ...editingInstallment,
+                                            numero_parcela: parseInt(e.target.value)
+                                          })}
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label htmlFor="editTotalParcelas">Total de Parcelas</Label>
+                                        <Input
+                                          id="editTotalParcelas"
+                                          type="number"
+                                          min="1"
+                                          value={editingInstallment.total_parcelas || 1}
+                                          onChange={(e) => setEditingInstallment({
+                                            ...editingInstallment,
+                                            total_parcelas: parseInt(e.target.value)
+                                          })}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
 
-                                 {editingInstallment.eh_recorrente && (
-                                   <>
-                                     <div>
-                                       <Label htmlFor="editTipoRecorrencia">Tipo de Recorrência</Label>
-                                       <select
-                                         id="editTipoRecorrencia"
-                                         value={editingInstallment.tipo_recorrencia || "mensal"}
-                                         onChange={(e) => setEditingInstallment({
-                                           ...editingInstallment,
-                                           tipo_recorrencia: e.target.value
-                                         })}
-                                         className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md"
-                                       >
-                                         <option value="mensal">Mensal</option>
-                                         <option value="bimestral">Bimestral</option>
-                                         <option value="trimestral">Trimestral</option>
-                                         <option value="semestral">Semestral</option>
-                                         <option value="anual">Anual</option>
-                                       </select>
-                                     </div>
+                                  {/* Campos de Forma de Pagamento */}
+                                  <div className="space-y-4 p-4 border rounded-lg">
+                                    <h4 className="font-medium">Dados de Pagamento</h4>
+                                    
+                                    <div>
+                                      <Label htmlFor="editFormaPagamento">Forma de Pagamento</Label>
+                                      <select
+                                        id="editFormaPagamento"
+                                        value={editingInstallment.forma_pagamento || ""}
+                                        onChange={(e) => setEditingInstallment({
+                                          ...editingInstallment,
+                                          forma_pagamento: e.target.value
+                                        })}
+                                        className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md"
+                                      >
+                                        <option value="">Selecione a forma de pagamento</option>
+                                        <option value="PIX">PIX</option>
+                                        <option value="Boleto">Boleto</option>
+                                        <option value="Transferência">Transferência</option>
+                                        <option value="Cartão de Débito">Cartão de Débito</option>
+                                        <option value="Cartão de Crédito">Cartão de Crédito</option>
+                                        <option value="Dinheiro">Dinheiro</option>
+                                        <option value="Cheque">Cheque</option>
+                                      </select>
+                                    </div>
 
-                                     <div className="flex items-center space-x-2">
-                                       <Checkbox
-                                         id="editValorFixo"
-                                         checked={editingInstallment.valor_fixo || false}
-                                         onCheckedChange={(checked) => setEditingInstallment({
-                                           ...editingInstallment,
-                                           valor_fixo: checked as boolean
-                                         })}
-                                       />
-                                       <Label htmlFor="editValorFixo">Valor Fixo</Label>
-                                     </div>
-                                   </>
-                                 )}
+                                    <div>
+                                      <Label htmlFor="editDadosPagamento">Dados do Pagamento</Label>
+                                      <Input
+                                        id="editDadosPagamento"
+                                        value={editingInstallment.dados_pagamento || ""}
+                                        onChange={(e) => setEditingInstallment({
+                                          ...editingInstallment,
+                                          dados_pagamento: e.target.value
+                                        })}
+                                        placeholder={
+                                          editingInstallment.forma_pagamento === 'PIX' ? 'Chave PIX (email, telefone, CPF)' :
+                                          editingInstallment.forma_pagamento === 'Boleto' ? 'Código de barras ou linha digitável' :
+                                          editingInstallment.forma_pagamento === 'Transferência' ? 'Banco, agência e conta' :
+                                          editingInstallment.forma_pagamento === 'Cartão de Débito' || editingInstallment.forma_pagamento === 'Cartão de Crédito' ? 'Últimos 4 dígitos do cartão' :
+                                          'Informações adicionais sobre o pagamento'
+                                        }
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id="editRecorrente"
+                                      checked={editingInstallment.eh_recorrente || false}
+                                      onCheckedChange={(checked) => setEditingInstallment({
+                                        ...editingInstallment,
+                                        eh_recorrente: checked as boolean
+                                      })}
+                                    />
+                                    <Label htmlFor="editRecorrente">Despesa Recorrente</Label>
+                                  </div>
                                  
                                  <Button onClick={() => handleEdit(editingInstallment)}>
                                    Salvar Alterações

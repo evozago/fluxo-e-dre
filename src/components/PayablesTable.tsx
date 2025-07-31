@@ -80,6 +80,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
     descricao: "",
     fornecedor: "",
     numero_documento: "",
+    status: "",
     eh_recorrente: false,
     tipo_recorrencia: "mensal",
     valor_fixo: false
@@ -270,6 +271,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
           if (bulkEditData.descricao) updates.descricao = bulkEditData.descricao;
           if (bulkEditData.fornecedor) updates.fornecedor = bulkEditData.fornecedor;
           if (bulkEditData.numero_documento) updates.numero_documento = bulkEditData.numero_documento;
+          if (bulkEditData.status) updates.status = bulkEditData.status;
           if (bulkEditData.eh_recorrente !== undefined) updates.eh_recorrente = bulkEditData.eh_recorrente;
           if (bulkEditData.tipo_recorrencia && bulkEditData.eh_recorrente) updates.tipo_recorrencia = bulkEditData.tipo_recorrencia;
           if (bulkEditData.valor_fixo !== undefined && bulkEditData.eh_recorrente) updates.valor_fixo = bulkEditData.valor_fixo;
@@ -313,6 +315,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
         descricao: "",
         fornecedor: "",
         numero_documento: "",
+        status: "",
         eh_recorrente: false,
         tipo_recorrencia: "mensal",
         valor_fixo: false
@@ -1516,27 +1519,42 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                )}
 
                <div>
-                <Label htmlFor="bulkDataVencimento">Data de Vencimento</Label>
-                <Input
-                  id="bulkDataVencimento"
-                  type="date"
-                  value={bulkEditData.data_vencimento}
-                  onChange={(e) => setBulkEditData({...bulkEditData, data_vencimento: e.target.value})}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="bulkValorAjuste">Ajuste de Valor</Label>
-                <Input
-                  id="bulkValorAjuste"
-                  placeholder="Ex: +10%, -5%, +100, -50"
-                  value={bulkEditData.valor_adjustment}
-                  onChange={(e) => setBulkEditData({...bulkEditData, valor_adjustment: e.target.value})}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Use +10% ou -5% para percentual, +100 ou -50 para valor fixo
-                </p>
-              </div>
+                 <Label htmlFor="bulkDataVencimento">Data de Vencimento</Label>
+                 <Input
+                   id="bulkDataVencimento"
+                   type="date"
+                   value={bulkEditData.data_vencimento}
+                   onChange={(e) => setBulkEditData({...bulkEditData, data_vencimento: e.target.value})}
+                 />
+               </div>
+
+               <div>
+                 <Label htmlFor="bulkStatus">Status</Label>
+                 <select
+                   id="bulkStatus"
+                   value={bulkEditData.status}
+                   onChange={(e) => setBulkEditData({...bulkEditData, status: e.target.value})}
+                   className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md"
+                 >
+                   <option value="">Não alterar</option>
+                   <option value="aberto">Aberto</option>
+                   <option value="pago">Pago</option>
+                   <option value="vencido">Vencido</option>
+                 </select>
+               </div>
+               
+               <div>
+                 <Label htmlFor="bulkValorAjuste">Ajuste de Valor</Label>
+                 <Input
+                   id="bulkValorAjuste"
+                   placeholder="Ex: +10%, -5%, +100, -50"
+                   value={bulkEditData.valor_adjustment}
+                   onChange={(e) => setBulkEditData({...bulkEditData, valor_adjustment: e.target.value})}
+                 />
+                 <p className="text-xs text-muted-foreground mt-1">
+                   Use +10% ou -5% para percentual, +100 ou -50 para valor fixo
+                 </p>
+               </div>
               
               <Button onClick={handleBulkEdit} className="w-full">
                 Aplicar Alterações

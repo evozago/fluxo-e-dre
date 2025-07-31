@@ -20,11 +20,16 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
     supplier: "",
     value: "",
     dueDate: "",
+    dataInicial: "",
+    dataFinal: "",
     category: "",
     recurring: false,
+    isInstallment: false,
+    numeroParcelasField: "1",
     entidadeId: "",
     formaPagamento: "",
-    dadosPagamento: ""
+    dadosPagamento: "",
+    tipoPix: ""
   });
   const [entidades, setEntidades] = useState<{id: string, nome: string, tipo: string}[]>([]);
   const { toast } = useToast();
@@ -41,7 +46,7 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
   }, [open]);
 
   const handleSubmit = async () => {
-    if (!formData.description || !formData.supplier || !formData.value || !formData.dueDate || !formData.entidadeId) {
+    if (!formData.description || !formData.supplier || !formData.value || !formData.entidadeId) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios",
@@ -50,42 +55,125 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
       return;
     }
 
+    if (!formData.recurring && !formData.isInstallment && !formData.dueDate) {
+      toast({
+        title: "Erro",
+        description: "Para despesas simples, a data de vencimento é obrigatória",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (formData.recurring && !formData.dataInicial) {
+      toast({
+        title: "Erro",
+        description: "Para despesas recorrentes, a data inicial é obrigatória",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
-      const installmentData = {
+      const baseData = {
         descricao: formData.description,
         fornecedor: formData.supplier,
         valor: parseFloat(formData.value),
-        data_vencimento: formData.dueDate,
         categoria: formData.category || 'Geral',
         entidade_id: formData.entidadeId,
-        eh_recorrente: formData.recurring,
-        tipo_recorrencia: formData.recurring ? 'mensal' : null,
         forma_pagamento: formData.formaPagamento || null,
-        dados_pagamento: formData.dadosPagamento || null,
+        dados_pagamento: formData.formaPagamento === 'PIX' && formData.tipoPix ? 
+          `${formData.dadosPagamento} (${formData.tipoPix})` : 
+          formData.dadosPagamento || null,
         status: 'aberto'
       };
 
-      const { error } = await supabase
-        .from('ap_installments')
-        .insert(installmentData);
+      if (formData.recurring) {
+        // Despesa recorrente
+        const installmentData = {
+          ...baseData,
+          data_vencimento: formData.dataInicial,
+          eh_recorrente: true,
+          tipo_recorrencia: 'mensal',
+          valor_fixo: true
+        };
 
-      if (error) throw error;
+        const { error } = await supabase
+          .from('ap_installments')
+          .insert(installmentData);
 
-      toast({
-        title: "Despesa criada com sucesso",
-        description: `${formData.recurring ? 'Despesa recorrente' : 'Despesa'} de ${formData.description} no valor de R$ ${parseFloat(formData.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} cadastrada`
-      });
+        if (error) throw error;
+
+        toast({
+          title: "Despesa recorrente criada com sucesso",
+          description: `Despesa recorrente de ${formData.description} no valor de R$ ${parseFloat(formData.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} cadastrada`
+        });
+      } else if (formData.isInstallment) {
+        // Despesa parcelada
+        const numParcelas = parseInt(formData.numeroParcelasField);
+        const valorParcela = parseFloat(formData.value) / numParcelas;
+        const dataInicial = new Date(formData.dataInicial);
+
+        const installments = [];
+        for (let i = 0; i < numParcelas; i++) {
+          const dataVencimento = new Date(dataInicial);
+          dataVencimento.setMonth(dataVencimento.getMonth() + i);
+          
+          installments.push({
+            ...baseData,
+            valor: valorParcela,
+            data_vencimento: dataVencimento.toISOString().split('T')[0],
+            numero_parcela: i + 1,
+            total_parcelas: numParcelas,
+            valor_total_titulo: parseFloat(formData.value),
+            eh_recorrente: false
+          });
+        }
+
+        const { error } = await supabase
+          .from('ap_installments')
+          .insert(installments);
+
+        if (error) throw error;
+
+        toast({
+          title: "Despesa parcelada criada com sucesso",
+          description: `${numParcelas} parcelas de R$ ${valorParcela.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} cadastradas`
+        });
+      } else {
+        // Despesa simples
+        const installmentData = {
+          ...baseData,
+          data_vencimento: formData.dueDate,
+          eh_recorrente: false
+        };
+
+        const { error } = await supabase
+          .from('ap_installments')
+          .insert(installmentData);
+
+        if (error) throw error;
+
+        toast({
+          title: "Despesa criada com sucesso",
+          description: `Despesa de ${formData.description} no valor de R$ ${parseFloat(formData.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} cadastrada`
+        });
+      }
       
       setFormData({
         description: "",
         supplier: "",
         value: "",
         dueDate: "",
+        dataInicial: "",
+        dataFinal: "",
         category: "",
         recurring: false,
+        isInstallment: false,
+        numeroParcelasField: "1",
         entidadeId: "",
         formaPagamento: "",
-        dadosPagamento: ""
+        dadosPagamento: "",
+        tipoPix: ""
       });
       onOpenChange(false);
     } catch (error) {
@@ -140,15 +228,62 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
             />
           </div>
 
-          <div>
-            <Label htmlFor="dueDate">Data de Vencimento *</Label>
-            <Input
-              id="dueDate"
-              type="date"
-              value={formData.dueDate}
-              onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
-            />
-          </div>
+          {/* Data de Vencimento para despesas simples */}
+          {!formData.recurring && !formData.isInstallment && (
+            <div>
+              <Label htmlFor="dueDate">Data de Vencimento *</Label>
+              <Input
+                id="dueDate"
+                type="date"
+                value={formData.dueDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
+              />
+            </div>
+          )}
+
+          {/* Data Inicial para despesas recorrentes ou parceladas */}
+          {(formData.recurring || formData.isInstallment) && (
+            <div>
+              <Label htmlFor="dataInicial">
+                {formData.recurring ? 'Data Inicial *' : 'Data da Primeira Parcela *'}
+              </Label>
+              <Input
+                id="dataInicial"
+                type="date"
+                value={formData.dataInicial}
+                onChange={(e) => setFormData(prev => ({ ...prev, dataInicial: e.target.value }))}
+              />
+            </div>
+          )}
+
+          {/* Data Final (opcional) para despesas recorrentes */}
+          {formData.recurring && (
+            <div>
+              <Label htmlFor="dataFinal">Data Final (opcional)</Label>
+              <Input
+                id="dataFinal"
+                type="date"
+                value={formData.dataFinal}
+                onChange={(e) => setFormData(prev => ({ ...prev, dataFinal: e.target.value }))}
+              />
+            </div>
+          )}
+
+          {/* Número de Parcelas para despesas parceladas */}
+          {formData.isInstallment && (
+            <div>
+              <Label htmlFor="numeroParcelas">Número de Parcelas *</Label>
+              <Input
+                id="numeroParcelas"
+                type="number"
+                min="1"
+                max="120"
+                value={formData.numeroParcelasField}
+                onChange={(e) => setFormData(prev => ({ ...prev, numeroParcelasField: e.target.value }))}
+                placeholder="1"
+              />
+            </div>
+          )}
 
           <div>
             <Label htmlFor="entidade">Entidade *</Label>
@@ -211,6 +346,24 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
             </Select>
           </div>
 
+          {/* Tipo de PIX quando PIX for selecionado */}
+          {formData.formaPagamento === 'PIX' && (
+            <div>
+              <Label htmlFor="tipoPix">Tipo de Chave PIX</Label>
+              <Select onValueChange={(value) => setFormData(prev => ({ ...prev, tipoPix: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo de chave PIX" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CPF">CPF</SelectItem>
+                  <SelectItem value="Email">E-mail</SelectItem>
+                  <SelectItem value="Telefone">Telefone</SelectItem>
+                  <SelectItem value="Chave Aleatória">Chave Aleatória</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div>
             <Label htmlFor="dadosPagamento">Dados do Pagamento</Label>
             <Input
@@ -218,7 +371,7 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
               value={formData.dadosPagamento}
               onChange={(e) => setFormData(prev => ({ ...prev, dadosPagamento: e.target.value }))}
               placeholder={
-                formData.formaPagamento === 'PIX' ? 'Chave PIX (CPF, email, telefone ou chave aleatória)' :
+                formData.formaPagamento === 'PIX' ? 'Informe a chave PIX' :
                 formData.formaPagamento === 'Boleto' ? 'Código de barras ou linha digitável' :
                 formData.formaPagamento === 'Transferência' ? 'Banco, agência e conta' :
                 formData.formaPagamento === 'Cartão de Débito' || formData.formaPagamento === 'Cartão de Crédito' ? 'Últimos 4 dígitos do cartão' :
@@ -227,13 +380,30 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
             />
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="recurring"
-              checked={formData.recurring}
-              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, recurring: checked }))}
-            />
-            <Label htmlFor="recurring">Despesa recorrente</Label>
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="recurring"
+                checked={formData.recurring}
+                onCheckedChange={(checked) => setFormData(prev => ({ 
+                  ...prev, 
+                  recurring: checked,
+                  isInstallment: checked ? false : prev.isInstallment 
+                }))}
+              />
+              <Label htmlFor="recurring">Despesa recorrente (mensal)</Label>
+            </div>
+
+            {!formData.recurring && (
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="isInstallment"
+                  checked={formData.isInstallment}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isInstallment: checked }))}
+                />
+                <Label htmlFor="isInstallment">Despesa parcelada</Label>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2">

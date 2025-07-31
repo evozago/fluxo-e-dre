@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Search, Edit, Check, DollarSign, Calendar, Download, Upload, Users, Paperclip, CreditCard, ChevronUp, ChevronDown, FileText, Repeat, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -73,6 +74,8 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [bankImportOpen, setBankImportOpen] = useState(false);
   const [selectedInstallmentForReceipt, setSelectedInstallmentForReceipt] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(100);
   const [bulkEditData, setBulkEditData] = useState({
     categoria: "",
     forma_pagamento: "",
@@ -239,6 +242,22 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
     }
 
     setFilteredInstallments(filtered);
+    setCurrentPage(1); // Reset to first page when filters change
+  };
+
+  // Calcular dados paginados
+  const totalPages = Math.ceil(filteredInstallments.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedInstallments = filteredInstallments.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(parseInt(value));
+    setCurrentPage(1);
   };
 
   const handleSort = (field: string) => {
@@ -807,12 +826,36 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
       </CardHeader>
       
       <CardContent>
+        {/* Controles de Paginação Superior */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="itemsPerPage">Itens por página:</Label>
+            <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+                <SelectItem value="200">200</SelectItem>
+                <SelectItem value="500">500</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="text-sm text-muted-foreground">
+            Mostrando {startIndex + 1} a {Math.min(endIndex, filteredInstallments.length)} de {filteredInstallments.length} resultados
+          </div>
+        </div>
+
         {filteredInstallments.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground">Nenhuma conta encontrada</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -935,7 +978,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredInstallments.map((installment, index) => (
+                {paginatedInstallments.map((installment, index) => (
                   <TableRow key={installment.id}>
                     <TableCell>
                       <Checkbox
@@ -1407,7 +1450,77 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                 ))}
               </TableBody>
             </Table>
-          </div>
+            </div>
+
+            {/* Paginação */}
+            <div className="mt-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      href="#" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentPage > 1) handlePageChange(currentPage - 1);
+                      }}
+                      className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                  
+                  {/* Páginas */}
+                  {[...Array(totalPages)].map((_, i) => {
+                    const page = i + 1;
+                    const isCurrentPage = page === currentPage;
+                    
+                    // Mostrar apenas algumas páginas próximas à atual
+                    if (totalPages <= 7 || 
+                        page === 1 || 
+                        page === totalPages || 
+                        (page >= currentPage - 2 && page <= currentPage + 2)) {
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handlePageChange(page);
+                            }}
+                            isActive={isCurrentPage}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    }
+                    
+                    // Adicionar ellipsis se necessário
+                    if (page === currentPage - 3 || page === currentPage + 3) {
+                      return (
+                        <PaginationItem key={`ellipsis-${page}`}>
+                          <span className="flex h-9 w-9 items-center justify-center">
+                            ...
+                          </span>
+                        </PaginationItem>
+                      );
+                    }
+                    
+                    return null;
+                  })}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      href="#" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentPage < totalPages) handlePageChange(currentPage + 1);
+                      }}
+                      className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          </>
         )}
         
         {/* Totalizador */}

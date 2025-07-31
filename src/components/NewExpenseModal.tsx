@@ -38,7 +38,7 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
     if (open) loadEntidades();
   }, [open]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.description || !formData.supplier || !formData.value || !formData.dueDate || !formData.entidadeId) {
       toast({
         title: "Erro",
@@ -48,21 +48,48 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
       return;
     }
 
-    toast({
-      title: "Despesa criada",
-      description: `Despesa de ${formData.description} no valor de R$ ${formData.value} cadastrada`
-    });
-    
-    setFormData({
-      description: "",
-      supplier: "",
-      value: "",
-      dueDate: "",
-      category: "",
-      recurring: false,
-      entidadeId: ""
-    });
-    onOpenChange(false);
+    try {
+      const installmentData = {
+        descricao: formData.description,
+        fornecedor: formData.supplier,
+        valor: parseFloat(formData.value),
+        data_vencimento: formData.dueDate,
+        categoria: formData.category || 'Geral',
+        entidade_id: formData.entidadeId,
+        eh_recorrente: formData.recurring,
+        tipo_recorrencia: formData.recurring ? 'mensal' : null,
+        status: 'aberto'
+      };
+
+      const { error } = await supabase
+        .from('ap_installments')
+        .insert(installmentData);
+
+      if (error) throw error;
+
+      toast({
+        title: "Despesa criada com sucesso",
+        description: `${formData.recurring ? 'Despesa recorrente' : 'Despesa'} de ${formData.description} no valor de R$ ${parseFloat(formData.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} cadastrada`
+      });
+      
+      setFormData({
+        description: "",
+        supplier: "",
+        value: "",
+        dueDate: "",
+        category: "",
+        recurring: false,
+        entidadeId: ""
+      });
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Erro ao criar despesa:', error);
+      toast({
+        title: "Erro ao criar despesa",
+        description: "Não foi possível cadastrar a despesa. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (

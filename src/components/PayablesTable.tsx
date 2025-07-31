@@ -37,6 +37,7 @@ interface Installment {
   eh_recorrente: boolean;
   tipo_recorrencia: string | null;
   valor_fixo: boolean;
+  created_at: string;
   entidades?: {
     id: string;
     nome: string;
@@ -851,6 +852,15 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                        {getSortIcon('forma_pagamento')}
                      </div>
                    </TableHead>
+                   <TableHead 
+                     className="cursor-pointer hover:bg-muted/50" 
+                     onClick={() => handleSort('created_at')}
+                   >
+                     <div className="flex items-center gap-1">
+                       Data Criação
+                       {getSortIcon('created_at')}
+                     </div>
+                   </TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -912,12 +922,23 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      {installment.forma_pagamento || '-'}
-                      {installment.banco && (
-                        <div className="text-xs text-muted-foreground">{installment.banco}</div>
-                      )}
-                    </TableCell>
+                     <TableCell>
+                       {installment.forma_pagamento || '-'}
+                       {installment.banco && (
+                         <div className="text-xs text-muted-foreground">{installment.banco}</div>
+                       )}
+                     </TableCell>
+                     <TableCell>
+                       <div className="text-sm">
+                         {new Date(installment.created_at).toLocaleString('pt-BR', {
+                           day: '2-digit',
+                           month: '2-digit',
+                           year: 'numeric',
+                           hour: '2-digit',
+                           minute: '2-digit'
+                         })}
+                       </div>
+                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         {installment.status === 'pago' && installment.comprovante_path && (

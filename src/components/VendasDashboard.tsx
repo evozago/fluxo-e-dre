@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Calendar, DollarSign, ShoppingCart, Target, Clock } from "lucide-react";
+import { Plus, Edit, Calendar, DollarSign, ShoppingCart, Target, Clock, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -30,6 +30,8 @@ export const VendasDashboard = ({ onDataChange }: VendasDashboardProps) => {
   const [vendedoras, setVendedoras] = useState<{id: string, nome: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingVenda, setEditingVenda] = useState<Venda | null>(null);
   const [workingDaysLeft, setWorkingDaysLeft] = useState(0);
   const [formData, setFormData] = useState({
     vendedora_id: "",
@@ -164,6 +166,88 @@ export const VendasDashboard = ({ onDataChange }: VendasDashboardProps) => {
     }
   };
 
+  const handleEdit = async (venda: Venda) => {
+    if (!formData.vendedora_id || !formData.valor_venda) {
+      toast({
+        title: "Erro",
+        description: "Vendedora e valor são obrigatórios",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('vendas')
+        .update({
+          vendedora_id: formData.vendedora_id,
+          valor_venda: parseFloat(formData.valor_venda.replace(',', '.')),
+          observacoes: formData.observacoes || null
+        })
+        .eq('id', venda.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Venda atualizada",
+        description: "O valor foi atualizado com sucesso"
+      });
+
+      loadVendas();
+      onDataChange?.();
+      setEditModalOpen(false);
+      setEditingVenda(null);
+      setFormData({
+        vendedora_id: "",
+        valor_venda: "",
+        observacoes: ""
+      });
+    } catch (error: any) {
+      console.error('Erro ao atualizar venda:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível atualizar o valor",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDelete = async (vendaId: string) => {
+    try {
+      const { error } = await supabase
+        .from('vendas')
+        .delete()
+        .eq('id', vendaId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Venda excluída",
+        description: "O registro foi excluído com sucesso"
+      });
+
+      loadVendas();
+      onDataChange?.();
+    } catch (error: any) {
+      console.error('Erro ao excluir venda:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível excluir o registro",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const openEditModal = (venda: Venda) => {
+    setEditingVenda(venda);
+    setFormData({
+      vendedora_id: venda.vendedora_id,
+      valor_venda: venda.valor_venda.toString(),
+      observacoes: venda.observacoes || ""
+    });
+    setEditModalOpen(true);
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -265,27 +349,46 @@ export const VendasDashboard = ({ onDataChange }: VendasDashboardProps) => {
                   <TableHead>Vendedora</TableHead>
                   <TableHead>Valor Vendido</TableHead>
                   <TableHead>Observações</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {vendas.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                      Nenhuma venda registrada este mês
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  vendas.slice(0, 10).map((venda) => (
-                    <TableRow key={venda.id}>
-                      <TableCell>{formatDate(venda.data_venda)}</TableCell>
-                      <TableCell className="font-medium">{venda.vendedora_nome}</TableCell>
-                      <TableCell className="font-bold text-green-600">
-                        {formatCurrency(venda.valor_venda)}
-                      </TableCell>
-                      <TableCell>{venda.observacoes || '-'}</TableCell>
-                    </TableRow>
-                  ))
-                )}
+                 {vendas.length === 0 ? (
+                   <TableRow>
+                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                       Nenhuma venda registrada este mês
+                     </TableCell>
+                   </TableRow>
+                 ) : (
+                   vendas.slice(0, 10).map((venda) => (
+                     <TableRow key={venda.id}>
+                       <TableCell>{formatDate(venda.data_venda)}</TableCell>
+                       <TableCell className="font-medium">{venda.vendedora_nome}</TableCell>
+                       <TableCell className="font-bold text-green-600">
+                         {formatCurrency(venda.valor_venda)}
+                       </TableCell>
+                       <TableCell>{venda.observacoes || '-'}</TableCell>
+                       <TableCell>
+                         <div className="flex gap-2">
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             onClick={() => openEditModal(venda)}
+                           >
+                             <Edit className="h-4 w-4" />
+                           </Button>
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             onClick={() => handleDelete(venda.id)}
+                           >
+                             <Trash2 className="h-4 w-4" />
+                           </Button>
+                         </div>
+                       </TableCell>
+                     </TableRow>
+                   ))
+                 )}
               </TableBody>
             </Table>
           </div>
@@ -358,6 +461,83 @@ export const VendasDashboard = ({ onDataChange }: VendasDashboardProps) => {
                 type="button" 
                 variant="outline" 
                 onClick={() => setModalOpen(false)}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Editar Venda */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Editar Venda</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (editingVenda) handleEdit(editingVenda);
+          }} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <Label htmlFor="edit-vendedora">Vendedora *</Label>
+                <select
+                  id="edit-vendedora"
+                  value={formData.vendedora_id}
+                  onChange={(e) => setFormData({...formData, vendedora_id: e.target.value})}
+                  className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md"
+                  required
+                >
+                  <option value="">Selecione uma vendedora</option>
+                  {vendedoras.map(vendedora => (
+                    <option key={vendedora.id} value={vendedora.id}>
+                      {vendedora.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="md:col-span-2">
+                <Label htmlFor="edit-valor_venda">Valor Vendido no Mês *</Label>
+                <Input
+                  id="edit-valor_venda"
+                  type="number"
+                  step="0.01"
+                  placeholder="0,00"
+                  value={formData.valor_venda}
+                  onChange={(e) => setFormData({...formData, valor_venda: e.target.value})}
+                  required
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="edit-observacoes">Observações</Label>
+              <Input
+                id="edit-observacoes"
+                placeholder="Observações sobre o valor mensal (opcional)"
+                value={formData.observacoes}
+                onChange={(e) => setFormData({...formData, observacoes: e.target.value})}
+              />
+            </div>
+            
+            <div className="flex gap-2 pt-4">
+              <Button type="submit" className="flex-1">
+                Atualizar Venda
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setEditModalOpen(false);
+                  setEditingVenda(null);
+                  setFormData({
+                    vendedora_id: "",
+                    valor_venda: "",
+                    observacoes: ""
+                  });
+                }}
               >
                 Cancelar
               </Button>

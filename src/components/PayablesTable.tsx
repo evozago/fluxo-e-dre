@@ -9,12 +9,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Search, Edit, Check, DollarSign, Calendar, Download, Upload, Users, Paperclip, CreditCard, ChevronUp, ChevronDown, FileText, Repeat, Trash2 } from "lucide-react";
+import { Search, Edit, Check, DollarSign, Calendar, Download, Upload, Users, Paperclip, CreditCard, ChevronUp, ChevronDown, FileText, Repeat, Trash2, Undo2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { UploadReceiptModal } from "./UploadReceiptModal";
 import { BankStatementImport } from "./BankStatementImport";
 import { TitleDetailModal } from "./TitleDetailModal";
+
 
 interface Installment {
   id: string;
@@ -104,6 +105,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
     valor_total_titulo: number;
   } | null>(null);
   const [recurrentExpenseOpen, setRecurrentExpenseOpen] = useState(false);
+  const [undoActions, setUndoActions] = useState<any[]>([]);
   const { toast } = useToast();
 
   const CATEGORIAS = [
@@ -283,6 +285,47 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
       valor_total_titulo: installment.valor_total_titulo
     });
     setTitleDetailOpen(true);
+  };
+
+  const addUndoAction = (action: any) => {
+    setUndoActions(prev => [action, ...prev].slice(0, 10)); // Manter apenas as últimas 10 ações
+  };
+
+  const handleDeleteInstallment = async (installment: Installment) => {
+    try {
+      // Salvar dados originais para possível undo
+      const originalData = { ...installment };
+      
+      const { error } = await supabase
+        .from('ap_installments')
+        .delete()
+        .eq('id', installment.id);
+
+      if (error) throw error;
+
+      // Adicionar ação de undo
+      addUndoAction({
+        type: 'DELETE',
+        table: 'ap_installments',
+        data: originalData,
+        description: `Exclusão de "${installment.descricao}"`
+      });
+
+      toast({
+        title: "Item excluído",
+        description: `"${installment.descricao}" foi excluído com sucesso`
+      });
+
+      loadInstallments();
+      onDataChange();
+    } catch (error) {
+      console.error('Erro ao excluir item:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir o item",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleBulkEdit = async () => {
@@ -722,6 +765,23 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
         <div className="flex items-center justify-between">
           <CardTitle>Contas a Pagar</CardTitle>
           <div className="flex gap-2">
+            {undoActions.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  // Implementar undo da última ação
+                  toast({
+                    title: "Undo disponível",
+                    description: `Última ação: ${undoActions[0]?.description || 'Ação disponível'}`
+                  });
+                }}
+                className="flex items-center gap-2"
+              >
+                <Undo2 className="h-4 w-4" />
+                Desfazer ({undoActions.length})
+              </Button>
+            )}
             {selectedItems.length > 0 && (
               <>
                 <Button onClick={() => setBulkEditOpen(true)} variant="outline">
@@ -1114,6 +1174,14 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                           onClick={() => setBankImportOpen(true)}
                         >
                           <CreditCard className="h-4 w-4" />
+                        </Button>
+
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteInstallment(installment)}
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                         
                         <Dialog>

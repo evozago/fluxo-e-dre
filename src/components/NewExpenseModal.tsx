@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { FornecedorQuickAdd } from "./FornecedorQuickAdd";
 
 interface NewExpenseModalProps {
   open: boolean;
@@ -32,17 +33,21 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
     tipoPix: ""
   });
   const [entidades, setEntidades] = useState<{id: string, nome: string, tipo: string}[]>([]);
+  const [fornecedores, setFornecedores] = useState<{id: string, nome: string}[]>([]);
+  const [fornecedorModalOpen, setFornecedorModalOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    const loadEntidades = async () => {
-      const { data } = await supabase
-        .from('entidades')
-        .select('id, nome, tipo')
-        .eq('ativo', true);
-      setEntidades(data || []);
+    const loadData = async () => {
+      const [entidadesResult, fornecedoresResult] = await Promise.all([
+        supabase.from('entidades').select('id, nome, tipo').eq('ativo', true),
+        supabase.from('fornecedores').select('id, nome').eq('ativo', true)
+      ]);
+      
+      setEntidades(entidadesResult.data || []);
+      setFornecedores(fornecedoresResult.data || []);
     };
-    if (open) loadEntidades();
+    if (open) loadData();
   }, [open]);
 
   const handleSubmit = async () => {
@@ -92,10 +97,14 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
         const dataInicial = new Date(formData.dataInicial);
         const dataFinal = formData.dataFinal ? new Date(formData.dataFinal) : null;
         
-        // Se não há data final, gerar 12 meses
-        const numMeses = dataFinal ? 
-          Math.ceil((dataFinal.getTime() - dataInicial.getTime()) / (1000 * 60 * 60 * 24 * 30)) + 1 : 
-          12;
+        // Para despesas recorrentes, gerar até a data final ou 120 meses (10 anos) se não especificada
+        let numMeses = 120; // Default: 10 anos de recorrência
+        
+        if (dataFinal) {
+          const diffTime = dataFinal.getTime() - dataInicial.getTime();
+          const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30));
+          numMeses = Math.max(1, diffMonths + 1);
+        }
 
         const installments = [];
         for (let i = 0; i < numMeses; i++) {
@@ -225,11 +234,33 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
 
           <div>
             <Label htmlFor="supplier">Fornecedor *</Label>
+            <Select 
+              onValueChange={(value) => {
+                if (value === 'new-supplier') {
+                  setFornecedorModalOpen(true);
+                } else {
+                  const fornecedor = fornecedores.find(f => f.id === value);
+                  setFormData(prev => ({ ...prev, supplier: fornecedor?.nome || value }));
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione ou digite o fornecedor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="new-supplier">+ Cadastrar Novo Fornecedor</SelectItem>
+                {fornecedores.map(fornecedor => (
+                  <SelectItem key={fornecedor.id} value={fornecedor.id}>
+                    {fornecedor.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Input
-              id="supplier"
+              className="mt-2"
               value={formData.supplier}
               onChange={(e) => setFormData(prev => ({ ...prev, supplier: e.target.value }))}
-              placeholder="Nome do fornecedor"
+              placeholder="Ou digite o nome do fornecedor"
             />
           </div>
 
@@ -434,6 +465,15 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
           </div>
         </div>
       </DialogContent>
+      
+      <FornecedorQuickAdd
+        open={fornecedorModalOpen}
+        onOpenChange={setFornecedorModalOpen}
+        onFornecedorAdded={(fornecedor) => {
+          setFornecedores(prev => [fornecedor, ...prev]);
+          setFormData(prev => ({ ...prev, supplier: fornecedor.nome }));
+        }}
+      />
     </Dialog>
   );
 };

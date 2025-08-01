@@ -29,6 +29,7 @@ export type Database = {
           entidade_id: string
           forma_pagamento: string | null
           fornecedor: string
+          funcionario_id: string | null
           id: string
           nfe_id: string | null
           numero_documento: string | null
@@ -56,6 +57,7 @@ export type Database = {
           entidade_id: string
           forma_pagamento?: string | null
           fornecedor: string
+          funcionario_id?: string | null
           id?: string
           nfe_id?: string | null
           numero_documento?: string | null
@@ -83,6 +85,7 @@ export type Database = {
           entidade_id?: string
           forma_pagamento?: string | null
           fornecedor?: string
+          funcionario_id?: string | null
           id?: string
           nfe_id?: string | null
           numero_documento?: string | null
@@ -102,6 +105,13 @@ export type Database = {
             columns: ["entidade_id"]
             isOneToOne: false
             referencedRelation: "entidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_installments_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "funcionarios"
             referencedColumns: ["id"]
           },
           {
@@ -257,6 +267,54 @@ export type Database = {
           nome?: string
           telefone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      funcionarios: {
+        Row: {
+          ativo: boolean
+          cpf: string | null
+          created_at: string
+          dias_uteis_mes: number
+          email: string | null
+          endereco: string | null
+          id: string
+          nome: string
+          salario: number
+          telefone: string | null
+          updated_at: string
+          valor_transporte_dia: number
+          valor_transporte_total: number
+        }
+        Insert: {
+          ativo?: boolean
+          cpf?: string | null
+          created_at?: string
+          dias_uteis_mes?: number
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome: string
+          salario?: number
+          telefone?: string | null
+          updated_at?: string
+          valor_transporte_dia?: number
+          valor_transporte_total?: number
+        }
+        Update: {
+          ativo?: boolean
+          cpf?: string | null
+          created_at?: string
+          dias_uteis_mes?: number
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome?: string
+          salario?: number
+          telefone?: string | null
+          updated_at?: string
+          valor_transporte_dia?: number
+          valor_transporte_total?: number
         }
         Relationships: []
       }

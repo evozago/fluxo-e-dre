@@ -55,7 +55,7 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('funcionarios')
+        .from('funcionarios' as any)
         .select('*')
         .order('nome', { ascending: true });
 
@@ -105,7 +105,7 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
       if (editingFuncionario) {
         // Atualizar funcionário existente
         const { error } = await supabase
-          .from('funcionarios')
+          .from('funcionarios' as any)
           .update(funcionarioData)
           .eq('id', editingFuncionario.id);
 
@@ -118,9 +118,9 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
       } else {
         // Criar novo funcionário
         const { data: newFuncionario, error } = await supabase
-          .from('funcionarios')
+          .from('funcionarios' as any)
           .insert(funcionarioData)
-          .select()
+          .select('id')
           .single();
 
         if (error) throw error;
@@ -141,7 +141,8 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
             eh_recorrente: true,
             tipo_recorrencia: 'mensal',
             valor_fixo: true,
-            funcionario_id: newFuncionario.id
+            funcionario_id: (newFuncionario as any)?.id,
+            entidade_id: (newFuncionario as any)?.id
           },
           {
             descricao: `Vale Transporte - ${formData.nome}`,
@@ -153,7 +154,8 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
             eh_recorrente: true,
             tipo_recorrencia: 'mensal',
             valor_fixo: false, // Pode variar pelos dias úteis
-            funcionario_id: newFuncionario.id
+            funcionario_id: (newFuncionario as any)?.id,
+            entidade_id: (newFuncionario as any)?.id
           }
         ];
 
@@ -217,7 +219,7 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
 
     try {
       const { error } = await supabase
-        .from('funcionarios')
+        .from('funcionarios' as any)
         .update({ ativo: false })
         .eq('id', id);
 

@@ -395,7 +395,7 @@ export const MetasManager = ({ onMetaChange }: MetasManagerProps) => {
 
                       <div>
                         <p className="font-bold text-purple-600">{formatCurrency(meta.supermeta_valor || 0)}</p>
-                        <p className="text-sm text-muted-foreground">Supermeta</p>
+                        <p className="text-sm text-muted-foreground">Total Vendido</p>
                       </div>
 
                       <div>

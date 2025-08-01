@@ -105,6 +105,10 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
           aValue = a.telefone || '';
           bValue = b.telefone || '';
           break;
+        case 'created_at':
+          aValue = a.created_at || '';
+          bValue = b.created_at || '';
+          break;
         default:
           aValue = a.nome || '';
           bValue = b.nome || '';
@@ -428,6 +432,12 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
                       sortDirection === 'asc' ? ' ↑' : ' ↓'
                     )}
                   </TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => handleSort('created_at')}>
+                    Data Cadastro
+                    {sortField === 'created_at' && (
+                      sortDirection === 'asc' ? ' ↑' : ' ↓'
+                    )}
+                  </TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -438,6 +448,9 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
                     <TableCell>{fornecedor.cnpj_cpf || '-'}</TableCell>
                     <TableCell>{fornecedor.email || '-'}</TableCell>
                     <TableCell>{fornecedor.telefone || '-'}</TableCell>
+                    <TableCell>
+                      {new Date(fornecedor.created_at).toLocaleDateString('pt-BR')}
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button

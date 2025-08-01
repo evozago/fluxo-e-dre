@@ -10,6 +10,7 @@ import { ConfigurationSettings } from "@/components/ConfigurationSettings";
 import { SalesSystem } from "@/components/SalesSystem";
 import { MarcasManager } from "@/components/MarcasManager";
 import { ProdutosManager } from "@/components/ProdutosManager";
+import { FuncionariosManager } from "@/components/FuncionariosManager";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -115,6 +116,8 @@ const Dashboard = () => {
         return <EntidadeManager onEntidadeChange={loadDashboardStats} />;
       case "sales":
         return <SalesSystem />;
+      case "employees":
+        return <FuncionariosManager onFuncionarioChange={loadDashboardStats} />;
       case "settings":
         return <ConfigurationSettings />;
       default:

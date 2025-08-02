@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar, BarChart3, PieChart as PieChartIcon, TrendingUp, Download, FileText, Filter } from "lucide-react";
 import { SpreadsheetTemplates } from "./SpreadsheetTemplates";
+import { formatCurrency } from "@/lib/brazilian-utils";
 
 interface ReportsProps {
   onDataChange?: () => void;

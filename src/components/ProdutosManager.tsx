@@ -12,6 +12,7 @@ import { Package, Upload, FileSpreadsheet, Plus, Edit, Eye, ShoppingCart } from 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { PedidosImportModal } from "./PedidosImportModal";
+import { formatCurrency } from "@/lib/brazilian-utils";
 
 interface Produto {
   id: string;

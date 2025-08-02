@@ -484,7 +484,7 @@ export const Reports = ({ onDataChange }: ReportsProps) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as categorias</SelectItem>
-                  {categorias.map(categoria => (
+                  {categorias.filter(categoria => categoria && categoria.trim() !== '').map(categoria => (
                     <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
                   ))}
                 </SelectContent>
@@ -541,7 +541,7 @@ export const Reports = ({ onDataChange }: ReportsProps) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as formas</SelectItem>
-                  {formasPagamento.map(forma => (
+                  {formasPagamento.filter(forma => forma && forma.trim() !== '').map(forma => (
                     <SelectItem key={forma} value={forma}>{forma}</SelectItem>
                   ))}
                 </SelectContent>

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Target, Calculator, TrendingUp, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { formatCurrency, formatDate } from "@/lib/brazilian-utils";
 
 interface MetasManagerProps {
   onMetaChange?: () => void;
@@ -263,12 +264,6 @@ export const MetasManager = ({ onMetaChange }: MetasManagerProps) => {
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
 
   const getProgressPercent = (vendas: number, meta: number) => {
     return meta > 0 ? (vendas / meta) * 100 : 0;

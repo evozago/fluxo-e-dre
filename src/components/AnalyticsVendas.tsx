@@ -289,6 +289,7 @@ export const AnalyticsVendas = ({ onDataChange }: AnalyticsVendasProps) => {
                   }
                   return [formatCurrency(Number(value)), name === 'anoAtual' ? selectedYear : comparisonYear];
                 }}
+                labelFormatter={(label) => `Mês ${label}`}
               />
               <Line type="monotone" dataKey="anoAtual" stroke="#8884d8" name={selectedYear.toString()} />
               <Line type="monotone" dataKey="anoAnterior" stroke="#82ca9d" name={comparisonYear.toString()} />

@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { UploadReceiptModal } from "./UploadReceiptModal";
 import { BankStatementImport } from "./BankStatementImport";
 import { TitleDetailModal } from "./TitleDetailModal";
+import { formatCurrency, formatDate } from "@/lib/brazilian-utils";
 
 
 interface Installment {
@@ -694,12 +695,6 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR');
@@ -1091,13 +1086,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                      <TableCell>
                        {installment.data_hora_pagamento ? (
                          <div className="text-sm">
-                           {new Date(installment.data_hora_pagamento).toLocaleString('pt-BR', {
-                             day: '2-digit',
-                             month: '2-digit',
-                             year: 'numeric',
-                             hour: '2-digit',
-                             minute: '2-digit'
-                           })}
+                       {formatDate(installment.data_hora_pagamento)}
                          </div>
                        ) : (
                          <span className="text-muted-foreground">-</span>
@@ -1128,13 +1117,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                       </TableCell>
                      <TableCell>
                        <div className="text-sm">
-                         {new Date(installment.created_at).toLocaleString('pt-BR', {
-                           day: '2-digit',
-                           month: '2-digit',
-                           year: 'numeric',
-                           hour: '2-digit',
-                           minute: '2-digit'
-                         })}
+                      {formatDate(installment.created_at)}
                        </div>
                      </TableCell>
                     <TableCell>

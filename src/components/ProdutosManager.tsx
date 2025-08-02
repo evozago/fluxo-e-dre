@@ -251,12 +251,6 @@ export const ProdutosManager = () => {
     setPedidosImportOpen(true);
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -602,12 +596,6 @@ const PedidosTabContent = () => {
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
 
   const getStatusBadge = (status: string) => {
     const variants = {

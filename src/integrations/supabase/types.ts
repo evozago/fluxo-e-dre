@@ -239,6 +239,7 @@ export type Database = {
           ativo: boolean
           cnpj_cpf: string | null
           created_at: string
+          data_cadastro: string | null
           email: string | null
           endereco: string | null
           id: string
@@ -250,6 +251,7 @@ export type Database = {
           ativo?: boolean
           cnpj_cpf?: string | null
           created_at?: string
+          data_cadastro?: string | null
           email?: string | null
           endereco?: string | null
           id?: string
@@ -261,6 +263,7 @@ export type Database = {
           ativo?: boolean
           cnpj_cpf?: string | null
           created_at?: string
+          data_cadastro?: string | null
           email?: string | null
           endereco?: string | null
           id?: string
@@ -273,6 +276,7 @@ export type Database = {
       funcionarios: {
         Row: {
           ativo: boolean
+          chave_pix: string | null
           cpf: string | null
           created_at: string
           dias_uteis_mes: number
@@ -282,12 +286,14 @@ export type Database = {
           nome: string
           salario: number
           telefone: string | null
+          tipo_chave_pix: string | null
           updated_at: string
           valor_transporte_dia: number
           valor_transporte_total: number
         }
         Insert: {
           ativo?: boolean
+          chave_pix?: string | null
           cpf?: string | null
           created_at?: string
           dias_uteis_mes?: number
@@ -297,12 +303,14 @@ export type Database = {
           nome: string
           salario?: number
           telefone?: string | null
+          tipo_chave_pix?: string | null
           updated_at?: string
           valor_transporte_dia?: number
           valor_transporte_total?: number
         }
         Update: {
           ativo?: boolean
+          chave_pix?: string | null
           cpf?: string | null
           created_at?: string
           dias_uteis_mes?: number
@@ -312,6 +320,7 @@ export type Database = {
           nome?: string
           salario?: number
           telefone?: string | null
+          tipo_chave_pix?: string | null
           updated_at?: string
           valor_transporte_dia?: number
           valor_transporte_total?: number

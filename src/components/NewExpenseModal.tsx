@@ -9,6 +9,7 @@ import { FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FornecedorQuickAdd } from "./FornecedorQuickAdd";
+import { formatCurrency } from "@/lib/brazilian-utils";
 
 interface NewExpenseModalProps {
   open: boolean;
@@ -131,7 +132,7 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
 
         toast({
           title: "Despesa recorrente criada com sucesso",
-          description: `${installments.length} parcelas mensais de ${formData.description} no valor de R$ ${parseFloat(formData.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} cadastradas`
+          description: `${installments.length} parcelas mensais de ${formData.description} no valor de ${formatCurrency(parseFloat(formData.value))} cadastradas`
         });
       } else if (formData.isInstallment) {
         // Despesa parcelada
@@ -163,7 +164,7 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
 
         toast({
           title: "Despesa parcelada criada com sucesso",
-          description: `${numParcelas} parcelas de R$ ${valorParcela.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} cadastradas`
+          description: `${numParcelas} parcelas de ${formatCurrency(valorParcela)} cadastradas`
         });
       } else {
         // Despesa simples
@@ -181,7 +182,7 @@ export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) =>
 
         toast({
           title: "Despesa criada com sucesso",
-          description: `Despesa de ${formData.description} no valor de R$ ${parseFloat(formData.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} cadastrada`
+          description: `Despesa de ${formData.description} no valor de ${formatCurrency(parseFloat(formData.value))} cadastrada`
         });
       }
       

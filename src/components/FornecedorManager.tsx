@@ -620,7 +620,7 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
                         <TableCell className="font-medium">{conta.descricao}</TableCell>
                         <TableCell>{conta.categoria || '-'}</TableCell>
                         <TableCell className="font-medium">
-                          R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          {formatCurrency(Number(conta.valor))}
                         </TableCell>
                         <TableCell>
                           {new Date(conta.data_vencimento).toLocaleDateString('pt-BR')}

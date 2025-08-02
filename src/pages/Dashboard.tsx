@@ -13,6 +13,7 @@ import { MarcasManager } from "@/components/MarcasManager";
 import { ProdutosManager } from "@/components/ProdutosManager";
 import { SystemStructure } from "@/components/SystemStructure";
 import { SystemOrganogram } from "@/components/SystemOrganogram";
+import { SystemOrganogramEditable } from "@/components/SystemOrganogramEditable";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -123,7 +124,7 @@ const Dashboard = () => {
       case "structure":
         return <SystemStructure />;
       case "organogram":
-        return <SystemOrganogram />;
+        return <SystemOrganogramEditable />;
       case "settings":
         return <ConfigurationSettings />;
       default:

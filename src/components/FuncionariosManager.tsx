@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Edit, Trash2, User, DollarSign } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Edit, Trash2, User, DollarSign, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { formatCurrency, formatDate, formatCPF, formatPhone, getWorkingDaysInMonth } from "@/lib/brazilian-utils";
 
 interface Funcionario {
   id: string;
@@ -20,6 +22,8 @@ interface Funcionario {
   dias_uteis_mes: number;
   valor_transporte_dia: number;
   valor_transporte_total: number;
+  chave_pix?: string;
+  tipo_chave_pix?: string;
   ativo: boolean;
   created_at: string;
   updated_at: string;
@@ -41,7 +45,8 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
     telefone: "",
     endereco: "",
     salario: "",
-    dias_uteis_mes: "22"
+    chave_pix: "",
+    tipo_chave_pix: ""
   });
   const { toast } = useToast();
 
@@ -85,7 +90,8 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
       return;
     }
 
-    const diasUteis = parseInt(formData.dias_uteis_mes) || 22;
+    const hoje = new Date();
+    const diasUteis = getWorkingDaysInMonth(hoje.getFullYear(), hoje.getMonth() + 1);
     const valorTransporteTotal = diasUteis * valorTransporteDia;
 
     try {
@@ -99,6 +105,8 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
         dias_uteis_mes: diasUteis,
         valor_transporte_dia: valorTransporteDia,
         valor_transporte_total: valorTransporteTotal,
+        chave_pix: formData.chave_pix.trim() || null,
+        tipo_chave_pix: formData.tipo_chave_pix || null,
         ativo: true
       };
 
@@ -125,39 +133,69 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
 
         if (error) throw error;
 
-        // Criar contas a pagar recorrentes para salário e transporte
-        const today = new Date();
-        const mesAtual = today.getMonth() + 1;
-        const anoAtual = today.getFullYear();
+        // Criar funcionário como fornecedor
+        const { error: fornecedorError } = await supabase
+          .from('fornecedores')
+          .insert({
+            nome: formData.nome,
+            cpf_cnpj: formData.cpf || null,
+            email: formData.email || null,
+            telefone: formData.telefone || null,
+            endereco: formData.endereco || null,
+            ativo: true
+          });
 
-        const contasRecorrentes = [
-          {
-            descricao: `Salário - ${formData.nome}`,
-            fornecedor: formData.nome,
-            valor: parseFloat(formData.salario),
-            data_vencimento: `${anoAtual}-${mesAtual.toString().padStart(2, '0')}-05`, // Todo dia 5
-            status: 'aberto',
-            categoria: 'Salários',
-            eh_recorrente: true,
-            tipo_recorrencia: 'mensal',
-            valor_fixo: true,
-            funcionario_id: (newFuncionario as any)?.id,
-            entidade_id: (newFuncionario as any)?.id
-          },
-          {
-            descricao: `Vale Transporte - ${formData.nome}`,
-            fornecedor: formData.nome,
-            valor: valorTransporteTotal,
-            data_vencimento: `${anoAtual}-${mesAtual.toString().padStart(2, '0')}-05`, // Todo dia 5
-            status: 'aberto',
-            categoria: 'Transportes',
-            eh_recorrente: true,
-            tipo_recorrencia: 'mensal',
-            valor_fixo: false, // Pode variar pelos dias úteis
-            funcionario_id: (newFuncionario as any)?.id,
-            entidade_id: (newFuncionario as any)?.id
-          }
-        ];
+        if (fornecedorError) {
+          console.error('Erro ao criar fornecedor:', fornecedorError);
+        }
+
+        // Gerar próximos 12 meses de contas recorrentes
+        const contasRecorrentes = [];
+        const hoje = new Date();
+        
+        for (let i = 0; i < 12; i++) {
+          const mesAtual = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
+          const diasUteisDoMes = getWorkingDaysInMonth(mesAtual.getFullYear(), mesAtual.getMonth() + 1);
+          const valorTransporteMes = diasUteisDoMes * valorTransporteDia;
+          
+          // Data de vencimento no dia 5 de cada mês
+          const dataVencimento = new Date(mesAtual.getFullYear(), mesAtual.getMonth(), 5);
+          
+          contasRecorrentes.push(
+            {
+              descricao: `Salário - ${formData.nome}`,
+              fornecedor: formData.nome,
+              valor: parseFloat(formData.salario),
+              data_vencimento: dataVencimento.toISOString().split('T')[0],
+              status: 'aberto',
+              categoria: 'Salários',
+              eh_recorrente: true,
+              tipo_recorrencia: 'mensal',
+              valor_fixo: true,
+              funcionario_id: (newFuncionario as any)?.id,
+              entidade_id: (newFuncionario as any)?.id,
+              forma_pagamento: formData.tipo_chave_pix ? 'PIX' : null,
+              dados_pagamento: formData.chave_pix && formData.tipo_chave_pix ? 
+                `${formData.chave_pix} (${formData.tipo_chave_pix})` : null
+            },
+            {
+              descricao: `Vale Transporte - ${formData.nome} (${diasUteisDoMes} dias úteis)`,
+              fornecedor: formData.nome,
+              valor: valorTransporteMes,
+              data_vencimento: dataVencimento.toISOString().split('T')[0],
+              status: 'aberto',
+              categoria: 'Transportes',
+              eh_recorrente: true,
+              tipo_recorrencia: 'mensal',
+              valor_fixo: false,
+              funcionario_id: (newFuncionario as any)?.id,
+              entidade_id: (newFuncionario as any)?.id,
+              forma_pagamento: formData.tipo_chave_pix ? 'PIX' : null,
+              dados_pagamento: formData.chave_pix && formData.tipo_chave_pix ? 
+                `${formData.chave_pix} (${formData.tipo_chave_pix})` : null
+            }
+          );
+        }
 
         const { error: contasError } = await supabase
           .from('ap_installments')
@@ -169,7 +207,7 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
 
         toast({
           title: "Funcionário criado",
-          description: "Novo funcionário foi criado com contas recorrentes"
+          description: `Funcionário ${formData.nome} criado com 12 meses de contas recorrentes`
         });
       }
 
@@ -196,7 +234,8 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
       telefone: "",
       endereco: "",
       salario: "",
-      dias_uteis_mes: "22"
+      chave_pix: "",
+      tipo_chave_pix: ""
     });
   };
 
@@ -209,7 +248,8 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
       telefone: funcionario.telefone || "",
       endereco: funcionario.endereco || "",
       salario: funcionario.salario.toString(),
-      dias_uteis_mes: funcionario.dias_uteis_mes.toString()
+      chave_pix: funcionario.chave_pix || "",
+      tipo_chave_pix: funcionario.tipo_chave_pix || ""
     });
     setIsModalOpen(true);
   };
@@ -242,12 +282,6 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
 
   const openNewModal = () => {
     setEditingFuncionario(null);
@@ -299,6 +333,7 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
                   <TableHead>Telefone</TableHead>
                   <TableHead>Salário</TableHead>
                   <TableHead>Vale Transporte</TableHead>
+                  <TableHead>PIX</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -306,15 +341,16 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
                 {funcionarios.filter(f => f.ativo).map((funcionario) => (
                   <TableRow key={funcionario.id}>
                     <TableCell className="font-medium">{funcionario.nome}</TableCell>
-                    <TableCell>{funcionario.cpf || '-'}</TableCell>
+                    <TableCell>{funcionario.cpf ? formatCPF(funcionario.cpf) : '-'}</TableCell>
                     <TableCell>{funcionario.email || '-'}</TableCell>
-                    <TableCell>{funcionario.telefone || '-'}</TableCell>
+                    <TableCell>{funcionario.telefone ? formatPhone(funcionario.telefone) : '-'}</TableCell>
                     <TableCell className="font-medium text-green-600">
                       {formatCurrency(funcionario.salario)}
                     </TableCell>
                     <TableCell className="font-medium text-blue-600">
                       {formatCurrency(funcionario.valor_transporte_total)}
                     </TableCell>
+                    <TableCell>{funcionario.chave_pix || '-'}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
@@ -418,18 +454,43 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
                 </div>
                 
                 <div>
-                  <Label htmlFor="dias_uteis">Dias Úteis/Mês</Label>
+                  <Label htmlFor="chave_pix">Chave PIX</Label>
                   <Input
-                    id="dias_uteis"
-                    type="number"
-                    value={formData.dias_uteis_mes}
-                    onChange={(e) => setFormData({...formData, dias_uteis_mes: e.target.value})}
-                    placeholder="22"
+                    id="chave_pix"
+                    value={formData.chave_pix}
+                    onChange={(e) => setFormData({...formData, chave_pix: e.target.value})}
+                    placeholder="Chave PIX para pagamentos"
                   />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Vale transporte: {parseInt(formData.dias_uteis_mes) || 22} dias × R$ {valorTransporteDia.toFixed(2)} = R$ {((parseInt(formData.dias_uteis_mes) || 22) * valorTransporteDia).toFixed(2)}
-                  </p>
                 </div>
+                
+                <div>
+                  <Label htmlFor="tipo_chave_pix">Tipo da Chave PIX</Label>
+                  <Select onValueChange={(value) => setFormData({...formData, tipo_chave_pix: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CPF">CPF</SelectItem>
+                      <SelectItem value="Email">E-mail</SelectItem>
+                      <SelectItem value="Telefone">Telefone</SelectItem>
+                      <SelectItem value="Chave Aleatória">Chave Aleatória</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Informações do Vale Transporte
+                </h4>
+                <p className="text-sm text-blue-700">
+                  O vale transporte será calculado automaticamente baseado nos dias úteis de cada mês (Segunda a Sábado).
+                  Valor por dia: {formatCurrency(valorTransporteDia)} (2 passagens)
+                </p>
+                <p className="text-sm text-blue-600 mt-1">
+                  Este mês: {getWorkingDaysInMonth(new Date().getFullYear(), new Date().getMonth() + 1)} dias úteis = {formatCurrency(getWorkingDaysInMonth(new Date().getFullYear(), new Date().getMonth() + 1) * valorTransporteDia)}
+                </p>
               </div>
 
               <div className="flex gap-2 pt-4">

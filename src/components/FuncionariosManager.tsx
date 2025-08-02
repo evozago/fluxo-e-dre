@@ -55,7 +55,7 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('funcionarios' as any)
+        .from('funcionarios')
         .select('*')
         .order('nome', { ascending: true });
 
@@ -105,7 +105,7 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
       if (editingFuncionario) {
         // Atualizar funcionário existente
         const { error } = await supabase
-          .from('funcionarios' as any)
+          .from('funcionarios')
           .update(funcionarioData)
           .eq('id', editingFuncionario.id);
 
@@ -118,7 +118,7 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
       } else {
         // Criar novo funcionário
         const { data: newFuncionario, error } = await supabase
-          .from('funcionarios' as any)
+          .from('funcionarios')
           .insert(funcionarioData)
           .select('id')
           .single();
@@ -219,7 +219,7 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
 
     try {
       const { error } = await supabase
-        .from('funcionarios' as any)
+        .from('funcionarios')
         .update({ ativo: false })
         .eq('id', id);
 

@@ -503,7 +503,7 @@ export const Reports = ({ onDataChange }: ReportsProps) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as entidades</SelectItem>
-                  {entidades.map(entidade => (
+                  {entidades.filter(entidade => entidade.id && entidade.id.trim() !== '').map(entidade => (
                     <SelectItem key={entidade.id} value={entidade.id}>{entidade.nome}</SelectItem>
                   ))}
                 </SelectContent>

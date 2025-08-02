@@ -10,7 +10,9 @@ import {
   Settings,
   Home,
   Receipt,
-  ShoppingCart
+  ShoppingCart,
+  User,
+  Network
 } from "lucide-react";
 import {
   Sidebar,
@@ -75,9 +77,21 @@ const navigationItems = [
     section: "management"
   },
   {
+    title: "Funcionários",
+    url: "/dashboard?tab=employees",
+    icon: User,
+    section: "management"
+  },
+  {
     title: "Configurações",
     url: "/dashboard?tab=settings",
     icon: Settings,
+    section: "system"
+  },
+  {
+    title: "Organograma",
+    url: "/dashboard?tab=organogram",
+    icon: Network,
     section: "system"
   }
 ];

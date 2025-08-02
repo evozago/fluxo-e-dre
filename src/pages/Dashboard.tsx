@@ -4,14 +4,15 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import { PayablesTable } from "@/components/PayablesTable";
 import { FornecedorManager } from "@/components/FornecedorManager";
+import { FuncionariosManager } from "@/components/FuncionariosManager";
 import { Reports } from "@/components/Reports";
 import { EntidadeManager } from "@/components/EntidadeManager";
 import { ConfigurationSettings } from "@/components/ConfigurationSettings";
 import { SalesSystem } from "@/components/SalesSystem";
 import { MarcasManager } from "@/components/MarcasManager";
 import { ProdutosManager } from "@/components/ProdutosManager";
-import { FuncionariosManager } from "@/components/FuncionariosManager";
 import { SystemStructure } from "@/components/SystemStructure";
+import { SystemOrganogram } from "@/components/SystemOrganogram";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -121,6 +122,8 @@ const Dashboard = () => {
         return <FuncionariosManager onFuncionarioChange={loadDashboardStats} />;
       case "structure":
         return <SystemStructure />;
+      case "organogram":
+        return <SystemOrganogram />;
       case "settings":
         return <ConfigurationSettings />;
       default:

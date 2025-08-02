@@ -19,7 +19,7 @@ interface MetaMensal {
   ano: number;
   mes: number;
   meta_valor: number;
-  supermeta_valor?: number;
+  total_vendido?: number;  // Mudança de supermeta_valor para total_vendido
   vendas_realizadas: number;
   comissao_calculada: number;
   vendedora_nome?: string;
@@ -394,7 +394,7 @@ export const MetasManager = ({ onMetaChange }: MetasManagerProps) => {
                       </div>
 
                       <div>
-                        <p className="font-bold text-purple-600">{formatCurrency(meta.supermeta_valor || 0)}</p>
+                        <p className="font-bold text-purple-600">{formatCurrency(meta.total_vendido || 0)}</p>
                         <p className="text-sm text-muted-foreground">Total Vendido</p>
                       </div>
 

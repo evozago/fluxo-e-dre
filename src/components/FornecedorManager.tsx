@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Edit, Trash2, Save, Search, Download, Upload } from "lucide-react";
+import { Plus, Edit, Trash2, Save, Search, Download, Upload, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -31,6 +31,9 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [selectedFornecedor, setSelectedFornecedor] = useState<Fornecedor | null>(null);
+  const [fornecedorHistory, setFornecedorHistory] = useState<any[]>([]);
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
   const [sortField, setSortField] = useState<string>('nome');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -257,6 +260,28 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
     setIsModalOpen(true);
   };
 
+  const handleViewHistory = async (fornecedor: Fornecedor) => {
+    setSelectedFornecedor(fornecedor);
+    try {
+      const { data, error } = await supabase
+        .from('ap_installments')
+        .select('*')
+        .eq('fornecedor', fornecedor.nome)
+        .order('data_vencimento', { ascending: false });
+
+      if (error) throw error;
+      setFornecedorHistory(data || []);
+      setIsHistoryModalOpen(true);
+    } catch (error) {
+      console.error('Erro ao carregar histórico:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar o histórico do fornecedor",
+        variant: "destructive"
+      });
+    }
+  };
+
   const exportFornecedores = () => {
     const csvData = fornecedores.map(f => ({
       Nome: f.nome,
@@ -456,6 +481,14 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => handleViewHistory(fornecedor)}
+                          title="Ver histórico de contas"
+                        >
+                          <History className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleEdit(fornecedor)}
                         >
                           <Edit className="h-4 w-4" />
@@ -551,6 +584,70 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
                 </Button>
               </div>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Histórico do Fornecedor */}
+        <Dialog open={isHistoryModalOpen} onOpenChange={setIsHistoryModalOpen}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <History className="h-5 w-5" />
+                Histórico de Contas - {selectedFornecedor?.nome}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="max-h-96 overflow-y-auto">
+              {fornecedorHistory.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Nenhuma conta encontrada para este fornecedor</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Categoria</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Vencimento</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Forma Pagamento</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {fornecedorHistory.map((conta) => (
+                      <TableRow key={conta.id}>
+                        <TableCell className="font-medium">{conta.descricao}</TableCell>
+                        <TableCell>{conta.categoria || '-'}</TableCell>
+                        <TableCell className="font-medium">
+                          R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(conta.data_vencimento).toLocaleDateString('pt-BR')}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            conta.status === 'pago' ? 'bg-green-100 text-green-800' :
+                            conta.status === 'vencido' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {conta.status === 'pago' ? 'Pago' :
+                             conta.status === 'vencido' ? 'Vencido' : 'Em Aberto'}
+                          </span>
+                        </TableCell>
+                        <TableCell>{conta.forma_pagamento || '-'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+            
+            <div className="flex justify-end pt-4">
+              <Button variant="outline" onClick={() => setIsHistoryModalOpen(false)}>
+                Fechar
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
       </CardContent>

@@ -117,7 +117,17 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
           .update(funcionarioData)
           .eq('id', editingFuncionario.id);
 
-        if (error) throw error;
+        if (error) {
+          if (error.code === '23505') {
+            toast({
+              title: "CPF já cadastrado",
+              description: "Este CPF já existe na base de dados",
+              variant: "destructive"
+            });
+            return;
+          }
+          throw error;
+        }
 
         toast({
           title: "Funcionário atualizado",
@@ -131,7 +141,17 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
           .select('id')
           .single();
 
-        if (error) throw error;
+        if (error) {
+          if (error.code === '23505') {
+            toast({
+              title: "CPF já cadastrado",
+              description: "Este CPF já existe na base de dados",
+              variant: "destructive"
+            });
+            return;
+          }
+          throw error;
+        }
 
         // Criar funcionário como fornecedor
         const { data: newFornecedor, error: fornecedorError } = await supabase
@@ -148,6 +168,14 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
           .single();
 
         if (fornecedorError) {
+          if (fornecedorError.code === '23505') {
+            toast({
+              title: "CPF já cadastrado",
+              description: "Este CPF já existe como fornecedor",
+              variant: "destructive"
+            });
+            return;
+          }
           console.error('Erro ao criar fornecedor:', fornecedorError);
           throw fornecedorError;
         }
@@ -165,6 +193,14 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
           .single();
 
         if (entidadeError) {
+          if (entidadeError.code === '23505') {
+            toast({
+              title: "CPF já cadastrado",
+              description: "Este CPF já existe como entidade",
+              variant: "destructive"
+            });
+            return;
+          }
           console.error('Erro ao criar entidade:', entidadeError);
           throw entidadeError;
         }

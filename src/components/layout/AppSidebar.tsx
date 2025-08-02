@@ -12,7 +12,9 @@ import {
   Receipt,
   ShoppingCart,
   User,
-  Network
+  Network,
+  Banknote,
+  History
 } from "lucide-react";
 import {
   Sidebar,
@@ -50,6 +52,12 @@ const navigationItems = [
     title: "Relatórios",
     url: "/dashboard?tab=reports",
     icon: FileText,
+    section: "financial"
+  },
+  {
+    title: "Bancos",
+    url: "/dashboard?tab=banks",
+    icon: Banknote,
     section: "financial"
   },
   {
@@ -92,6 +100,12 @@ const navigationItems = [
     title: "Organograma",
     url: "/dashboard?tab=organogram",
     icon: Network,
+    section: "system"
+  },
+  {
+    title: "Histórico",
+    url: "/dashboard?tab=history",
+    icon: History,
     section: "system"
   }
 ];

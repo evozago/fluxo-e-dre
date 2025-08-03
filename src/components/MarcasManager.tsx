@@ -7,9 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Edit, Plus, Tag } from "lucide-react";
+import { Trash2, Edit, Plus, Tag, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { SpreadsheetImport, ImportConfig } from "@/components/shared/SpreadsheetImport";
 
 interface Marca {
   id: string;
@@ -38,6 +39,58 @@ export const MarcasManager = () => {
   });
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  const importConfig: ImportConfig = {
+    tableName: 'marcas',
+    displayName: 'Marcas',
+    columns: [
+      { key: 'nome', label: 'Nome da Marca', required: true, type: 'text' },
+      { key: 'fornecedor_nome', label: 'Fornecedor', required: false, type: 'text' }
+    ],
+    onImport: async (data) => {
+      for (const row of data) {
+        let fornecedor_id = null;
+        
+        if (row.fornecedor_nome) {
+          const { data: fornecedorData, error: fornecedorError } = await supabase
+            .from('fornecedores')
+            .select('id')
+            .eq('nome', row.fornecedor_nome)
+            .single();
+            
+          if (fornecedorError && fornecedorError.code === 'PGRST116') {
+            const { data: newFornecedor, error: createError } = await supabase
+              .from('fornecedores')
+              .insert({ nome: row.fornecedor_nome })
+              .select('id')
+              .single();
+              
+            if (createError) throw createError;
+            fornecedor_id = newFornecedor.id;
+          } else if (fornecedorError) {
+            throw fornecedorError;
+          } else {
+            fornecedor_id = fornecedorData.id;
+          }
+        }
+        
+        const { error } = await supabase
+          .from('marcas')
+          .insert({
+            nome: row.nome,
+            fornecedor_id
+          });
+          
+        if (error) throw error;
+      }
+      
+      loadMarcas();
+    },
+    templateData: [
+      { nome: 'Nike', fornecedor_nome: 'Fornecedor Esportivo' },
+      { nome: 'Adidas', fornecedor_nome: 'Distribuidora Roupas' }
+    ]
+  };
 
   useEffect(() => {
     loadMarcas();
@@ -193,7 +246,17 @@ export const MarcasManager = () => {
             <Tag className="h-5 w-5" />
             Gerenciar Marcas
           </CardTitle>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <div className="flex gap-2">
+            <SpreadsheetImport 
+              config={importConfig}
+              trigger={
+                <Button variant="outline">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Importar Planilha
+                </Button>
+              }
+            />
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={resetForm}>
                 <Plus className="mr-2 h-4 w-4" />
@@ -247,7 +310,8 @@ export const MarcasManager = () => {
                 </div>
               </form>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </div>
         </div>
       </CardHeader>
       

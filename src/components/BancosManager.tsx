@@ -52,12 +52,12 @@ export function BancosManager() {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('contas_bancarias' as any)
+        .from('contas_bancarias')
         .select('*')
         .order('nome_banco');
 
       if (error) throw error;
-      setContas((data as any) || []);
+      setContas(data || []);
     } catch (error) {
       console.error('Erro ao buscar contas bancárias:', error);
       toast({
@@ -87,7 +87,7 @@ export function BancosManager() {
 
       if (editingConta) {
         const { error } = await supabase
-          .from('contas_bancarias' as any)
+          .from('contas_bancarias')
           .update(contaData)
           .eq('id', editingConta.id);
 
@@ -99,7 +99,7 @@ export function BancosManager() {
         });
       } else {
         const { error } = await supabase
-          .from('contas_bancarias' as any)
+          .from('contas_bancarias')
           .insert(contaData);
 
         if (error) throw error;
@@ -145,7 +145,7 @@ export function BancosManager() {
 
     try {
       const { error } = await supabase
-        .from('contas_bancarias' as any)
+        .from('contas_bancarias')
         .delete()
         .eq('id', id);
 

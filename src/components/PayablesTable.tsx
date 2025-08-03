@@ -442,9 +442,10 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
     const dataToExport = filteredInstallments.map(item => ({
       Fornecedor: item.fornecedor,
       Descrição: item.descricao,
-      Valor: item.valor,
-      'Data Vencimento': item.data_vencimento,
-      'Data Pagamento': item.data_pagamento || '',
+      Valor: formatCurrency(item.valor),
+      'Data Vencimento': formatDate(item.data_vencimento),
+      'Data Pagamento': item.data_pagamento ? formatDate(item.data_pagamento) : '',
+      'Data/Hora Pagamento': item.data_hora_pagamento ? formatDateTime(item.data_hora_pagamento) : '',
       Status: item.status,
       Categoria: item.categoria,
       'Forma Pagamento': item.forma_pagamento || '',
@@ -452,7 +453,8 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
       Banco: item.banco || '',
       'Número Documento': item.numero_documento || '',
       Observações: item.observacoes || '',
-      'NFe ID': item.nfe_id || ''
+      'NFe ID': item.nfe_id || '',
+      'Data Criação': formatDate(item.created_at)
     }));
 
     const csvContent = [

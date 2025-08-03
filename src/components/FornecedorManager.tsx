@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Edit, Trash2, Save, Search, Download, Upload, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { formatCurrency } from "@/lib/brazilian-utils";
+import { formatCurrency, formatDate } from "@/lib/brazilian-utils";
 
 interface Fornecedor {
   id: string;
@@ -290,7 +290,9 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
       Email: f.email || '',
       Telefone: f.telefone || '',
       Endereço: f.endereco || '',
-      Ativo: f.ativo ? 'Sim' : 'Não'
+      Ativo: f.ativo ? 'Sim' : 'Não',
+      'Data Criação': formatDate(f.created_at),
+      'Última Atualização': formatDate(f.updated_at)
     }));
 
     const headers = Object.keys(csvData[0] || {});
@@ -475,7 +477,7 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
                     <TableCell>{fornecedor.email || '-'}</TableCell>
                     <TableCell>{fornecedor.telefone || '-'}</TableCell>
                     <TableCell>
-                      {new Date(fornecedor.created_at).toLocaleDateString('pt-BR')}
+                      {formatDate(fornecedor.created_at)}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
@@ -624,7 +626,7 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
                           {formatCurrency(Number(conta.valor))}
                         </TableCell>
                         <TableCell>
-                          {new Date(conta.data_vencimento).toLocaleDateString('pt-BR')}
+                          {formatDate(conta.data_vencimento)}
                         </TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs ${

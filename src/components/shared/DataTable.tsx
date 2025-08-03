@@ -101,6 +101,10 @@ export function DataTable<T extends Record<string, any>>({
     setColumnOrder(newOrder);
   };
 
+  const handleDragEnd = () => {
+    setDraggedColumn(null);
+  };
+
   const toggleColumnVisibility = (key: string) => {
     setHiddenColumns(prev => {
       const newSet = new Set(prev);

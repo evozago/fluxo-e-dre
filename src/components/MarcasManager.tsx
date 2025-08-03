@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable, ColumnDef } from "@/components/shared/DataTable";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2, Edit, Plus, Tag, Upload } from "lucide-react";
@@ -316,56 +316,61 @@ export const MarcasManager = () => {
       </CardHeader>
       
       <CardContent>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome da Marca</TableHead>
-                <TableHead>Fornecedor</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Data Criação</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {marcas.map((marca) => (
-                <TableRow key={marca.id}>
-                  <TableCell className="font-medium">{marca.nome}</TableCell>
-                  <TableCell>{marca.fornecedores?.nome || "N/A"}</TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant={marca.ativo ? "default" : "secondary"}
-                      className="cursor-pointer"
-                      onClick={() => handleToggleStatus(marca)}
-                    >
-                      {marca.ativo ? "Ativo" : "Inativo"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(marca.created_at).toLocaleDateString('pt-BR')}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(marca)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        
-        {marcas.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Nenhuma marca cadastrada</p>
-          </div>
-        )}
+        <DataTable
+          data={marcas}
+          columns={[
+            {
+              key: 'nome',
+              title: 'Nome da Marca',
+              sortable: true,
+              render: (value) => <span className="font-medium">{value}</span>
+            },
+            {
+              key: 'fornecedores',
+              title: 'Fornecedor',
+              sortable: true,
+              render: (value) => value?.nome || "N/A"
+            },
+            {
+              key: 'ativo',
+              title: 'Status',
+              sortable: true,
+              render: (value, marca) => (
+                <Badge 
+                  variant={value ? "default" : "secondary"}
+                  className="cursor-pointer"
+                  onClick={() => handleToggleStatus(marca)}
+                >
+                  {value ? "Ativo" : "Inativo"}
+                </Badge>
+              )
+            },
+            {
+              key: 'created_at',
+              title: 'Data Criação',
+              sortable: true,
+              render: (value) => new Date(value).toLocaleDateString('pt-BR')
+            },
+            {
+              key: 'actions',
+              title: 'Ações',
+              sortable: false,
+              render: (_, marca) => (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEdit(marca)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
+              )
+            }
+          ] as ColumnDef<any>[]}
+          searchPlaceholder="Buscar marca..."
+          emptyMessage="Nenhuma marca cadastrada"
+        />
       </CardContent>
     </Card>
   );

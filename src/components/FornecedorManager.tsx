@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DataTable, ColumnDef } from "@/components/shared/DataTable";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Edit, Trash2, Save, Search, Download, Upload, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -409,108 +410,77 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
           />
         </div>
         
-        <div className="flex gap-4 mt-4">
-          <div className="flex-1">
-            <Label htmlFor="search">Pesquisar</Label>
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="search"
-                placeholder="Nome ou CNPJ/CPF..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-          </div>
-        </div>
       </CardHeader>
       
       <CardContent>
-        {filteredFornecedores.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Nenhum fornecedor encontrado</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort('nome')}>
-                    Nome
-                    {sortField === 'nome' && (
-                      sortDirection === 'asc' ? ' ↑' : ' ↓'
-                    )}
-                  </TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort('cnpj_cpf')}>
-                    CNPJ/CPF
-                    {sortField === 'cnpj_cpf' && (
-                      sortDirection === 'asc' ? ' ↑' : ' ↓'
-                    )}
-                  </TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort('email')}>
-                    Email
-                    {sortField === 'email' && (
-                      sortDirection === 'asc' ? ' ↑' : ' ↓'
-                    )}
-                  </TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort('telefone')}>
-                    Telefone
-                    {sortField === 'telefone' && (
-                      sortDirection === 'asc' ? ' ↑' : ' ↓'
-                    )}
-                  </TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort('created_at')}>
-                    Data Cadastro
-                    {sortField === 'created_at' && (
-                      sortDirection === 'asc' ? ' ↑' : ' ↓'
-                    )}
-                  </TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredFornecedores.map((fornecedor) => (
-                  <TableRow key={fornecedor.id}>
-                    <TableCell className="font-medium">{fornecedor.nome}</TableCell>
-                    <TableCell>{fornecedor.cnpj_cpf || '-'}</TableCell>
-                    <TableCell>{fornecedor.email || '-'}</TableCell>
-                    <TableCell>{fornecedor.telefone || '-'}</TableCell>
-                    <TableCell>
-                      {formatDate(fornecedor.created_at)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewHistory(fornecedor)}
-                          title="Ver histórico de contas"
-                        >
-                          <History className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(fornecedor)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(fornecedor.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+        <DataTable
+          data={filteredFornecedores}
+          columns={[
+            {
+              key: 'nome',
+              title: 'Nome',
+              sortable: true,
+              render: (value) => <span className="font-medium">{value}</span>
+            },
+            {
+              key: 'cnpj_cpf',
+              title: 'CNPJ/CPF',
+              sortable: true,
+              render: (value) => value || '-'
+            },
+            {
+              key: 'email',
+              title: 'Email',
+              sortable: true,
+              render: (value) => value || '-'
+            },
+            {
+              key: 'telefone',
+              title: 'Telefone',
+              sortable: true,
+              render: (value) => value || '-'
+            },
+            {
+              key: 'created_at',
+              title: 'Data Cadastro',
+              sortable: true,
+              render: (value) => formatDate(value)
+            },
+            {
+              key: 'actions',
+              title: 'Ações',
+              sortable: false,
+              render: (_, fornecedor) => (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewHistory(fornecedor)}
+                    title="Ver histórico de contas"
+                  >
+                    <History className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEdit(fornecedor)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDelete(fornecedor.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )
+            }
+          ] as ColumnDef<any>[]}
+          searchPlaceholder="Buscar fornecedor..."
+          emptyMessage="Nenhum fornecedor encontrado"
+        />
 
         {/* Modal para Criar/Editar Fornecedor */}
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

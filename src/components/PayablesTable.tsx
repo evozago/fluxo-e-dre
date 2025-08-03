@@ -15,7 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { UploadReceiptModal } from "./UploadReceiptModal";
 import { BankStatementImport } from "./BankStatementImport";
 import { TitleDetailModal } from "./TitleDetailModal";
-import { formatCurrency, formatDate } from "@/lib/brazilian-utils";
+import { formatCurrency, formatDate, formatDateTime } from "@/lib/brazilian-utils";
+import { PaymentStatusBadge } from "@/components/shared/StatusBadge";
 
 
 interface Installment {
@@ -695,31 +696,6 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
     }
   };
 
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR');
-  };
-
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      'aberto': 'secondary',
-      'vencido': 'destructive',
-      'pago': 'default'
-    } as const;
-
-    const labels = {
-      'aberto': 'Em Aberto',
-      'vencido': 'Vencido',
-      'pago': 'Pago'
-    };
-
-    return (
-      <Badge variant={variants[status as keyof typeof variants] || 'secondary'}>
-        {labels[status as keyof typeof labels] || status}
-      </Badge>
-    );
-  };
-
   const calculateTotals = () => {
     const aberto = filteredInstallments
       .filter(item => item.status === 'aberto')
@@ -1086,13 +1062,15 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                      <TableCell>
                        {installment.data_hora_pagamento ? (
                          <div className="text-sm">
-                       {formatDate(installment.data_hora_pagamento)}
+                       {formatDateTime(installment.data_hora_pagamento)}
                          </div>
                        ) : (
                          <span className="text-muted-foreground">-</span>
                        )}
                      </TableCell>
-                     <TableCell>{getStatusBadge(installment.status)}</TableCell>
+                     <TableCell>
+                       <PaymentStatusBadge status={installment.status as "aberto" | "vencido" | "pago"} />
+                     </TableCell>
                     <TableCell>{installment.categoria}</TableCell>
                     <TableCell>
                       <div className="text-sm">

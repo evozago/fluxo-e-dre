@@ -164,15 +164,12 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
       setLoading(true);
       const { data, error } = await supabase
         .from('ap_installments')
-        .select(`
-          *,
-          entidades (id, nome, tipo)
-        `)
+        .select('*')
         .order('data_vencimento', { ascending: true });
 
       if (error) throw error;
       
-      // Corrigir valor_total_titulo para despesas recorrentes que estão null
+      // Processar dados e corrigir valor_total_titulo
       const processedData = data?.map(item => ({
         ...item,
         valor_total_titulo: item.valor_total_titulo || item.valor
@@ -180,6 +177,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
       
       console.log('Dados carregados:', processedData?.length, 'parcelas');
       console.log('Despesas recorrentes:', processedData?.filter(p => p.eh_recorrente)?.length, 'encontradas');
+      console.log('Exemplo de despesa recorrente:', processedData?.find(p => p.eh_recorrente));
       setInstallments(processedData);
     } catch (error) {
       console.error('Erro ao carregar parcelas:', error);
@@ -234,7 +232,14 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
     }
 
       if (dateFilter) {
-        filtered = filtered.filter(item => item.data_vencimento === dateFilter);
+        console.log('Aplicando filtro de data:', dateFilter);
+        console.log('Antes do filtro:', filtered.length, 'itens');
+        filtered = filtered.filter(item => {
+          const itemDate = new Date(item.data_vencimento).toISOString().split('T')[0];
+          const filterDate = new Date(dateFilter).toISOString().split('T')[0];
+          return itemDate === filterDate;
+        });
+        console.log('Após filtro de data:', filtered.length, 'itens');
       }
 
       // Filtro por período de datas

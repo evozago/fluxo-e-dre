@@ -4,40 +4,90 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Edit, Trash2, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ConfigurationSettingsProps {
   onConfigChange?: () => void;
 }
 
 export const ConfigurationSettings = ({ onConfigChange }: ConfigurationSettingsProps) => {
-  const [categorias, setCategorias] = useState([
-    'Contabilidade', 'Aluguel', 'Fornecedores', 'Salários', 'Impostos',
-    'Energia', 'Telefone', 'Internet', 'Água', 'Manutenção',
-    'Marketing', 'Combustível', 'Outras Despesas', 'Geral'
-  ]);
+  const [categorias, setCategorias] = useState<string[]>([]);
+  const [formasPagamento, setFormasPagamento] = useState<string[]>([]);
+  const [bancos, setBancos] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  const [formasPagamento, setFormasPagamento] = useState([
-    'Dinheiro', 'PIX', 'Transferência Bancária', 'Boleto Bancário',
-    'Cartão de Débito', 'Cartão de Crédito', 'Cheque'
-  ]);
-  
-  const [bancos, setBancos] = useState([
-    'Banco do Brasil', 'Caixa Econômica Federal', 'Bradesco', 'Itaú',
-    'Santander', 'Nubank', 'Inter', 'C6 Bank', 'BTG Pactual',
-    'Sicoob', 'Sicredi', 'Banrisul', 'Safra', 'Outro'
-  ]);
-
   const [newItem, setNewItem] = useState("");
   const [editingItem, setEditingItem] = useState<{type: string, index: number, value: string} | null>(null);
   const [activeDialog, setActiveDialog] = useState<string | null>(null);
 
   const { toast } = useToast();
 
-  const addItem = (type: 'categorias' | 'formasPagamento' | 'bancos') => {
+  useEffect(() => {
+    loadConfigurations();
+  }, []);
+
+  const loadConfigurations = async () => {
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase
+        .from('system_configurations')
+        .select('config_type, config_data')
+        .in('config_type', ['categorias', 'formas_pagamento', 'bancos']);
+
+      if (error) throw error;
+
+      // Organizar dados por tipo
+      const configs = data?.reduce((acc, item) => {
+        const configData = item.config_data;
+        if (Array.isArray(configData) && configData.every(item => typeof item === 'string')) {
+          acc[item.config_type] = configData as string[];
+        } else {
+          acc[item.config_type] = [];
+        }
+        return acc;
+      }, {} as Record<string, string[]>) || {};
+
+      setCategorias(configs.categorias || []);
+      setFormasPagamento(configs.formas_pagamento || []);
+      setBancos(configs.bancos || []);
+      
+    } catch (error) {
+      console.error('Erro ao carregar configurações:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar as configurações",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveConfiguration = async (type: 'categorias' | 'formas_pagamento' | 'bancos', data: string[]) => {
+    try {
+      const { error } = await supabase
+        .from('system_configurations')
+        .upsert({
+          config_type: type,
+          config_data: data
+        }, {
+          onConflict: 'config_type'
+        });
+
+      if (error) throw error;
+      
+      onConfigChange?.();
+    } catch (error) {
+      console.error('Erro ao salvar configuração:', error);
+      throw error;
+    }
+  };
+
+  const addItem = async (type: 'categorias' | 'formas_pagamento' | 'bancos') => {
     if (!newItem.trim()) {
       toast({
         title: "Erro",
@@ -48,7 +98,7 @@ export const ConfigurationSettings = ({ onConfigChange }: ConfigurationSettingsP
     }
 
     const currentList = type === 'categorias' ? categorias : 
-                       type === 'formasPagamento' ? formasPagamento : bancos;
+                       type === 'formas_pagamento' ? formasPagamento : bancos;
     
     if (currentList.includes(newItem.trim())) {
       toast({
@@ -59,24 +109,32 @@ export const ConfigurationSettings = ({ onConfigChange }: ConfigurationSettingsP
       return;
     }
 
-    const newList = [...currentList, newItem.trim()];
-    
-    if (type === 'categorias') setCategorias(newList);
-    else if (type === 'formasPagamento') setFormasPagamento(newList);
-    else setBancos(newList);
+    try {
+      const newList = [...currentList, newItem.trim()];
+      
+      await saveConfiguration(type, newList);
+      
+      if (type === 'categorias') setCategorias(newList);
+      else if (type === 'formas_pagamento') setFormasPagamento(newList);
+      else setBancos(newList);
 
-    setNewItem("");
-    setActiveDialog(null);
-    
-    toast({
-      title: "Item Adicionado",
-      description: `${newItem.trim()} foi adicionado com sucesso`
-    });
-
-    onConfigChange?.();
+      setNewItem("");
+      setActiveDialog(null);
+      
+      toast({
+        title: "Item Adicionado",
+        description: `${newItem.trim()} foi adicionado com sucesso`
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível adicionar o item",
+        variant: "destructive"
+      });
+    }
   };
 
-  const editItem = (type: 'categorias' | 'formasPagamento' | 'bancos', index: number) => {
+  const editItem = async (type: 'categorias' | 'formas_pagamento' | 'bancos', index: number) => {
     if (!editingItem?.value.trim()) {
       toast({
         title: "Erro",
@@ -86,47 +144,63 @@ export const ConfigurationSettings = ({ onConfigChange }: ConfigurationSettingsP
       return;
     }
 
-    const currentList = type === 'categorias' ? categorias : 
-                       type === 'formasPagamento' ? formasPagamento : bancos;
-    
-    const newList = [...currentList];
-    newList[index] = editingItem.value.trim();
-    
-    if (type === 'categorias') setCategorias(newList);
-    else if (type === 'formasPagamento') setFormasPagamento(newList);
-    else setBancos(newList);
+    try {
+      const currentList = type === 'categorias' ? categorias : 
+                         type === 'formas_pagamento' ? formasPagamento : bancos;
+      
+      const newList = [...currentList];
+      newList[index] = editingItem.value.trim();
+      
+      await saveConfiguration(type, newList);
+      
+      if (type === 'categorias') setCategorias(newList);
+      else if (type === 'formas_pagamento') setFormasPagamento(newList);
+      else setBancos(newList);
 
-    setEditingItem(null);
-    
-    toast({
-      title: "Item Atualizado",
-      description: "Item foi atualizado com sucesso"
-    });
-
-    onConfigChange?.();
+      setEditingItem(null);
+      
+      toast({
+        title: "Item Atualizado",
+        description: "Item foi atualizado com sucesso"
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o item",
+        variant: "destructive"
+      });
+    }
   };
 
-  const removeItem = (type: 'categorias' | 'formasPagamento' | 'bancos', index: number) => {
-    const currentList = type === 'categorias' ? categorias : 
-                       type === 'formasPagamento' ? formasPagamento : bancos;
-    
-    const newList = currentList.filter((_, i) => i !== index);
-    
-    if (type === 'categorias') setCategorias(newList);
-    else if (type === 'formasPagamento') setFormasPagamento(newList);
-    else setBancos(newList);
+  const removeItem = async (type: 'categorias' | 'formas_pagamento' | 'bancos', index: number) => {
+    try {
+      const currentList = type === 'categorias' ? categorias : 
+                         type === 'formas_pagamento' ? formasPagamento : bancos;
+      
+      const newList = currentList.filter((_, i) => i !== index);
+      
+      await saveConfiguration(type, newList);
+      
+      if (type === 'categorias') setCategorias(newList);
+      else if (type === 'formas_pagamento') setFormasPagamento(newList);
+      else setBancos(newList);
 
-    toast({
-      title: "Item Removido",
-      description: "Item foi removido com sucesso"
-    });
-
-    onConfigChange?.();
+      toast({
+        title: "Item Removido",
+        description: "Item foi removido com sucesso"
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover o item",
+        variant: "destructive"
+      });
+    }
   };
 
   const renderItemList = (
     items: string[], 
-    type: 'categorias' | 'formasPagamento' | 'bancos',
+    type: 'categorias' | 'formas_pagamento' | 'bancos',
     title: string
   ) => (
     <Card>
@@ -219,11 +293,15 @@ export const ConfigurationSettings = ({ onConfigChange }: ConfigurationSettingsP
     </Card>
   );
 
+  if (loading) {
+    return <div>Carregando configurações...</div>;
+  }
+
   return (
     <div className="space-y-6">
       <div className="grid gap-6">
         {renderItemList(categorias, 'categorias', 'Categorias')}
-        {renderItemList(formasPagamento, 'formasPagamento', 'Formas de Pagamento')}
+        {renderItemList(formasPagamento, 'formas_pagamento', 'Formas de Pagamento')}
         {renderItemList(bancos, 'bancos', 'Bancos')}
       </div>
     </div>

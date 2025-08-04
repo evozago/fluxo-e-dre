@@ -19,6 +19,7 @@ import { formatCurrency, formatDate, formatDateTime, parseCurrency } from "@/lib
 import { CancelPaymentModal } from "./CancelPaymentModal";
 import { PaymentStatusBadge } from "@/components/shared/StatusBadge";
 import { DataTable } from "@/components/shared/DataTable";
+import { RecurrentExpenseModal } from "./RecurrentExpenseModal";
 
 interface Installment {
   id: string;
@@ -2231,116 +2232,16 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
         />
 
         {/* Modal de Despesa Recorrente */}
-        <Dialog open={recurrentExpenseOpen} onOpenChange={setRecurrentExpenseOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Criar Despesa Recorrente</DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="recurrent-fornecedor">Fornecedor</Label>
-                  <Input
-                    id="recurrent-fornecedor"
-                    placeholder="Nome do fornecedor"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="recurrent-descricao">Descrição</Label>
-                  <Input
-                    id="recurrent-descricao"
-                    placeholder="Ex: Aluguel, Energia elétrica"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="recurrent-categoria">Categoria</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIAS.map((cat) => (
-                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="recurrent-entidade">Entidade</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a entidade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {entidades.map((entidade) => (
-                        <SelectItem key={entidade.id} value={entidade.id}>
-                          {entidade.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="recurrent-valor-tipo">Tipo de Valor</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Fixo ou Variável" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="fixo">Valor Fixo</SelectItem>
-                      <SelectItem value="variavel">Valor Variável</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="recurrent-valor">Valor (se fixo)</Label>
-                  <Input
-                    id="recurrent-valor"
-                    type="number"
-                    step="0.01"
-                    placeholder="0,00"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="recurrent-vencimento">Dia do Vencimento</Label>
-                  <Input
-                    id="recurrent-vencimento"
-                    type="number"
-                    min="1"
-                    max="31"
-                    placeholder="5"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="recurrent-inicio">Data de Início</Label>
-                  <Input
-                    id="recurrent-inicio"
-                    type="date"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setRecurrentExpenseOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button>
-                  Criar Despesa Recorrente
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <RecurrentExpenseModal
+          open={recurrentExpenseOpen}
+          onOpenChange={setRecurrentExpenseOpen}
+          fornecedores={fornecedores}
+          entidades={entidades}
+          onSuccess={() => {
+            loadInstallments();
+            onDataChange();
+          }}
+        />
       </CardContent>
     </Card>
   );

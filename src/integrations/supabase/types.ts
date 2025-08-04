@@ -793,6 +793,33 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          role?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       representantes_contatos: {
         Row: {
           ativo: boolean
@@ -973,74 +1000,50 @@ export type Database = {
       }
     }
     Views: {
-      v_ap_installments_complete: {
-        Row: {
-          banco: string | null
-          categoria: string | null
-          comprovante_path: string | null
-          conta_bancaria_id: string | null
-          conta_banco_nome: string | null
-          created_at: string | null
-          dados_pagamento: string | null
-          data_hora_pagamento: string | null
-          data_pagamento: string | null
-          data_vencimento: string | null
-          descricao: string | null
-          eh_recorrente: boolean | null
-          entidade_id: string | null
-          entidade_nome: string | null
-          entidade_tipo: string | null
-          forma_pagamento: string | null
-          fornecedor: string | null
-          funcionario_id: string | null
-          funcionario_nome: string | null
-          id: string | null
-          nfe_id: string | null
-          numero_documento: string | null
-          numero_parcela: number | null
-          observacoes: string | null
-          status: string | null
-          status_calculado: string | null
-          tipo_recorrencia: string | null
-          total_parcelas: number | null
-          updated_at: string | null
-          valor: number | null
-          valor_fixo: boolean | null
-          valor_total_titulo: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ap_installments_conta_bancaria_id_fkey"
-            columns: ["conta_bancaria_id"]
-            isOneToOne: false
-            referencedRelation: "contas_bancarias"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ap_installments_entidade_id_fkey"
-            columns: ["entidade_id"]
-            isOneToOne: false
-            referencedRelation: "entidades"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ap_installments_funcionario_id_fkey"
-            columns: ["funcionario_id"]
-            isOneToOne: false
-            referencedRelation: "funcionarios"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ap_installments_nfe_id_fkey"
-            columns: ["nfe_id"]
-            isOneToOne: false
-            referencedRelation: "nfe_data"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
+      get_ap_installments_complete: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          descricao: string
+          fornecedor: string
+          categoria: string
+          valor: number
+          data_vencimento: string
+          data_pagamento: string
+          status: string
+          status_calculado: string
+          numero_documento: string
+          banco: string
+          forma_pagamento: string
+          observacoes: string
+          comprovante_path: string
+          numero_parcela: number
+          total_parcelas: number
+          valor_total_titulo: number
+          eh_recorrente: boolean
+          tipo_recorrencia: string
+          dados_pagamento: string
+          data_hora_pagamento: string
+          funcionario_id: string
+          funcionario_nome: string
+          conta_bancaria_id: string
+          conta_banco_nome: string
+          entidade_id: string
+          entidade_nome: string
+          entidade_tipo: string
+          nfe_id: string
+          created_at: string
+          updated_at: string
+          valor_fixo: boolean
+        }[]
+      }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_dashboard_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1049,6 +1052,10 @@ export type Database = {
           vencidos: number
           pagos_mes_atual: number
         }[]
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
       search_ap_installments: {
         Args: {

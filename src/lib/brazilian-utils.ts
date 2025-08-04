@@ -7,9 +7,50 @@ export const formatCurrency = (value: number): string => {
   }).format(value);
 };
 
-export const formatDate = (date: string | Date): string => {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return dateObj.toLocaleDateString('pt-BR');
+export const formatDate = (date: string | Date | null | undefined): string => {
+  if (!date) return '-';
+  
+  try {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    
+    // Verificar se a data é válida
+    if (isNaN(dateObj.getTime())) {
+      return '-';
+    }
+    
+    return dateObj.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  } catch (error) {
+    console.warn('Erro ao formatar data:', date, error);
+    return '-';
+  }
+};
+
+export const formatDateTime = (date: string | Date | null | undefined): string => {
+  if (!date) return '-';
+  
+  try {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    
+    // Verificar se a data é válida
+    if (isNaN(dateObj.getTime())) {
+      return '-';
+    }
+    
+    return dateObj.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (error) {
+    console.warn('Erro ao formatar data e hora:', date, error);
+    return '-';
+  }
 };
 
 export const formatDateInput = (date: string): string => {

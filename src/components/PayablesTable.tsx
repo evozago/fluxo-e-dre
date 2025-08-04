@@ -9,14 +9,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Search, Edit, Check, DollarSign, Calendar, Download, Upload, Users, Paperclip, CreditCard, ChevronUp, ChevronDown, FileText, Repeat, Trash2, Undo2 } from "lucide-react";
+import { Search, Edit, Check, DollarSign, Calendar, Download, Upload, Users, Paperclip, CreditCard, ChevronUp, ChevronDown, FileText, Repeat, Trash2, Undo2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { UploadReceiptModal } from "./UploadReceiptModal";
 import { BankStatementImport } from "./BankStatementImport";
 import { TitleDetailModal } from "./TitleDetailModal";
-import { formatCurrency, formatDate } from "@/lib/brazilian-utils";
-
+import { formatCurrency, formatDate, formatDateTime, parseCurrency } from "@/lib/brazilian-utils";
+import { CancelPaymentModal } from "./CancelPaymentModal";
+import { PaymentStatusBadge } from "@/components/shared/StatusBadge";
+import { DataTable } from "@/components/shared/DataTable";
+import { RecurrentExpenseModal } from "./RecurrentExpenseModal";
 
 interface Installment {
   id: string;
@@ -96,9 +99,12 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
   });
   const [entidades, setEntidades] = useState<{id: string, nome: string, tipo: string}[]>([]);
   const [fornecedores, setFornecedores] = useState<{id: string, nome: string}[]>([]);
+  const [contasBancarias, setContasBancarias] = useState<{id: string, nome_banco: string, saldo_atual: number}[]>([]);
   const [sortField, setSortField] = useState<string>("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [titleDetailOpen, setTitleDetailOpen] = useState(false);
+  const [cancelPaymentModalOpen, setCancelPaymentModalOpen] = useState(false);
+  const [installmentToCancel, setInstallmentToCancel] = useState<any>(null);
   const [selectedTitle, setSelectedTitle] = useState<{
     nfe_id?: string | null;
     fornecedor: string;
@@ -107,6 +113,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
   } | null>(null);
   const [recurrentExpenseOpen, setRecurrentExpenseOpen] = useState(false);
   const [undoActions, setUndoActions] = useState<any[]>([]);
+  const [showModularView, setShowModularView] = useState(false);
   const { toast } = useToast();
 
   const CATEGORIAS = [
@@ -120,16 +127,31 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
     'Cartão de Débito', 'Cartão de Crédito', 'Cheque'
   ];
 
-  const BANCOS = [
-    'Banco do Brasil', 'Caixa Econômica Federal', 'Bradesco', 'Itaú',
-    'Santander', 'Nubank', 'Inter', 'C6 Bank', 'BTG Pactual',
-    'Sicoob', 'Sicredi', 'Banrisul', 'Safra', 'Outro'
-  ];
+  // Função para carregar contas bancárias
+  const loadContasBancarias = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('contas_bancarias')
+        .select('id, nome_banco, saldo_atual')
+        .eq('ativo', true)
+        .order('nome_banco');
+
+      if (error) {
+        console.error('Erro ao carregar contas bancárias:', error);
+        return;
+      }
+
+      setContasBancarias(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar contas bancárias:', error);
+    }
+  };
 
   useEffect(() => {
     loadInstallments();
     loadEntidades();
     loadFornecedores();
+    loadContasBancarias();
   }, []);
 
   useEffect(() => {
@@ -149,9 +171,16 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
         .order('data_vencimento', { ascending: true });
 
       if (error) throw error;
-      console.log('Dados carregados:', data?.length, 'parcelas');
-      console.log('Status das primeiras 3 parcelas:', data?.slice(0, 3)?.map(p => ({ id: p.id, status: p.status })));
-      setInstallments(data || []);
+      
+      // Corrigir valor_total_titulo para despesas recorrentes que estão null
+      const processedData = data?.map(item => ({
+        ...item,
+        valor_total_titulo: item.valor_total_titulo || item.valor
+      })) || [];
+      
+      console.log('Dados carregados:', processedData?.length, 'parcelas');
+      console.log('Despesas recorrentes:', processedData?.filter(p => p.eh_recorrente)?.length, 'encontradas');
+      setInstallments(processedData);
     } catch (error) {
       console.error('Erro ao carregar parcelas:', error);
       toast({
@@ -441,9 +470,10 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
     const dataToExport = filteredInstallments.map(item => ({
       Fornecedor: item.fornecedor,
       Descrição: item.descricao,
-      Valor: item.valor,
-      'Data Vencimento': item.data_vencimento,
-      'Data Pagamento': item.data_pagamento || '',
+      Valor: formatCurrency(item.valor),
+      'Data Vencimento': formatDate(item.data_vencimento),
+      'Data Pagamento': item.data_pagamento ? formatDate(item.data_pagamento) : '',
+      'Data/Hora Pagamento': item.data_hora_pagamento ? formatDateTime(item.data_hora_pagamento) : '',
       Status: item.status,
       Categoria: item.categoria,
       'Forma Pagamento': item.forma_pagamento || '',
@@ -451,7 +481,8 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
       Banco: item.banco || '',
       'Número Documento': item.numero_documento || '',
       Observações: item.observacoes || '',
-      'NFe ID': item.nfe_id || ''
+      'NFe ID': item.nfe_id || '',
+      'Data Criação': formatDate(item.created_at)
     }));
 
     const csvContent = [
@@ -602,23 +633,58 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
         return newSelected;
       });
     } else {
-      // Seleção normal
       setSelectedItems(prev => 
         prev.includes(itemId) 
-          ? prev.filter(id => id !== itemId)
+          ? prev.filter(item => item !== itemId)
           : [...prev, itemId]
       );
-      setLastSelectedIndex(index);
     }
+    setLastSelectedIndex(index);
   };
 
-  const handlePayment = async (installment: Installment) => {
+  const handlePayment = async (installment: any) => {
+    if (!paymentAmount || !paymentDate || !paymentMethod) {
+      toast({
+        title: "Erro",
+        description: "Preencha todos os campos obrigatórios",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validar se banco foi selecionado para métodos que requerem
+    const metodosQueRequeremBanco = ['PIX', 'Transferência Bancária', 'Cartão de Débito', 'Cartão de Crédito'];
+    if (metodosQueRequeremBanco.includes(paymentMethod) && !bank) {
+      toast({
+        title: "Erro",
+        description: "Selecione um banco para este método de pagamento",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const finalAmount = discount ? 
         parseFloat(paymentAmount) - parseFloat(discount) : 
         parseFloat(paymentAmount);
 
-      const { error } = await supabase
+      // Encontrar a conta bancária selecionada
+      const contaBancaria = contasBancarias.find(conta => conta.nome_banco === bank);
+      
+      // Validar saldo suficiente se banco foi selecionado
+      if (contaBancaria && metodosQueRequeremBanco.includes(paymentMethod)) {
+        if (contaBancaria.saldo_atual < finalAmount) {
+          toast({
+            title: "Saldo Insuficiente",
+            description: `Saldo atual: ${formatCurrency(contaBancaria.saldo_atual)}. Valor do pagamento: ${formatCurrency(finalAmount)}`,
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
+      // Atualizar o pagamento
+      const { error: paymentError } = await supabase
         .from('ap_installments')
         .update({
           data_pagamento: paymentDate,
@@ -627,6 +693,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
           valor: finalAmount,
           forma_pagamento: paymentMethod,
           banco: bank,
+          conta_bancaria_id: contaBancaria?.id || null,
           numero_documento: documentNumber,
           observacoes: discount ? 
             `${installment.observacoes || ''} | Desconto: R$ ${discount}`.trim() : 
@@ -634,11 +701,38 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
         })
         .eq('id', installment.id);
 
-      if (error) throw error;
+      if (paymentError) throw paymentError;
+
+      // Atualizar saldo da conta bancária se aplicável
+      if (contaBancaria && metodosQueRequeremBanco.includes(paymentMethod)) {
+        const novoSaldo = contaBancaria.saldo_atual - finalAmount;
+        
+        const { error: saldoError } = await supabase
+          .from('contas_bancarias')
+          .update({ 
+            saldo_atual: novoSaldo,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', contaBancaria.id);
+
+        if (saldoError) {
+          console.error('Erro ao atualizar saldo:', saldoError);
+          // Não falha o pagamento, apenas loga o erro
+        } else {
+          // Atualizar estado local
+          setContasBancarias(prev => 
+            prev.map(conta => 
+              conta.id === contaBancaria.id 
+                ? { ...conta, saldo_atual: novoSaldo }
+                : conta
+            )
+          );
+        }
+      }
 
       toast({
         title: "Pagamento Registrado",
-        description: `Parcela de ${installment.fornecedor} foi marcada como paga`
+        description: `Parcela de ${installment.fornecedor} foi marcada como paga${contaBancaria ? `. Saldo atualizado: ${formatCurrency(contaBancaria.saldo_atual - finalAmount)}` : ''}`
       });
 
       loadInstallments();
@@ -646,10 +740,10 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
       setEditingInstallment(null);
       setPaymentAmount("");
       setPaymentDate("");
-      setDiscount("");
       setPaymentMethod("");
       setBank("");
       setDocumentNumber("");
+      setDiscount("");
     } catch (error) {
       console.error('Erro ao registrar pagamento:', error);
       toast({
@@ -658,6 +752,83 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
         variant: "destructive"
       });
     }
+  };
+
+  // Função para cancelar pagamento
+  const handleCancelPayment = async () => {
+    if (!installmentToCancel) return;
+
+    try {
+      const metodosQueRequeremBanco = ['PIX', 'Transferência Bancária', 'Cartão de Débito', 'Cartão de Crédito'];
+      const contaBancaria = contasBancarias.find(conta => conta.nome_banco === installmentToCancel.banco);
+      
+      // Atualizar o pagamento para cancelado
+      const { error: paymentError } = await supabase
+        .from('ap_installments')
+        .update({
+          data_pagamento: null,
+          data_hora_pagamento: null,
+          status: 'aberto',
+          forma_pagamento: null,
+          banco: null,
+          conta_bancaria_id: null,
+          numero_documento: null,
+          observacoes: installmentToCancel.observacoes?.replace(/\s*\|\s*Desconto:.*$/, '') || null
+        })
+        .eq('id', installmentToCancel.id);
+
+      if (paymentError) throw paymentError;
+
+      // Reverter saldo da conta bancária se aplicável
+      if (contaBancaria && installmentToCancel.forma_pagamento && 
+          metodosQueRequeremBanco.includes(installmentToCancel.forma_pagamento)) {
+        const novoSaldo = contaBancaria.saldo_atual + installmentToCancel.valor;
+        
+        const { error: saldoError } = await supabase
+          .from('contas_bancarias')
+          .update({ 
+            saldo_atual: novoSaldo,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', contaBancaria.id);
+
+        if (saldoError) {
+          console.error('Erro ao reverter saldo:', saldoError);
+        } else {
+          // Atualizar estado local
+          setContasBancarias(prev => 
+            prev.map(conta => 
+              conta.id === contaBancaria.id 
+                ? { ...conta, saldo_atual: novoSaldo }
+                : conta
+            )
+          );
+        }
+      }
+
+      toast({
+        title: "Pagamento Cancelado",
+        description: `Pagamento de ${installmentToCancel.fornecedor} foi cancelado${contaBancaria ? `. Saldo revertido: ${formatCurrency(contaBancaria.saldo_atual + installmentToCancel.valor)}` : ''}`
+      });
+
+      loadInstallments();
+      onDataChange();
+      setCancelPaymentModalOpen(false);
+      setInstallmentToCancel(null);
+    } catch (error) {
+      console.error('Erro ao cancelar pagamento:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível cancelar o pagamento",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Função para abrir modal de cancelamento
+  const openCancelPaymentModal = (installment: any) => {
+    setInstallmentToCancel(installment);
+    setCancelPaymentModalOpen(true);
   };
 
   const handleEdit = async (installment: Installment) => {
@@ -693,31 +864,6 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
         variant: "destructive"
       });
     }
-  };
-
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR');
-  };
-
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      'aberto': 'secondary',
-      'vencido': 'destructive',
-      'pago': 'default'
-    } as const;
-
-    const labels = {
-      'aberto': 'Em Aberto',
-      'vencido': 'Vencido',
-      'pago': 'Pago'
-    };
-
-    return (
-      <Badge variant={variants[status as keyof typeof variants] || 'secondary'}>
-        {labels[status as keyof typeof labels] || status}
-      </Badge>
-    );
   };
 
   const calculateTotals = () => {
@@ -801,6 +947,14 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
             <Button onClick={() => setRecurrentExpenseOpen(true)} variant="outline">
               <Repeat className="mr-2 h-4 w-4" />
               Despesa Recorrente
+            </Button>
+            
+            <Button
+              variant="outline"
+              onClick={() => setShowModularView(!showModularView)}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              {showModularView ? "Visualização Normal" : "Personalizar Colunas"}
             </Button>
           </div>
         </div>
@@ -911,6 +1065,125 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
           <div className="text-center py-8">
             <p className="text-muted-foreground">Nenhuma conta encontrada</p>
           </div>
+        ) : showModularView ? (
+          <DataTable
+            data={paginatedInstallments}
+            columns={[
+              {
+                key: 'fornecedor',
+                title: 'Fornecedor',
+                sortable: true,
+                render: (value) => (
+                  <div className="font-medium max-w-[150px] truncate">{value}</div>
+                )
+              },
+              {
+                key: 'descricao',
+                title: 'Descrição',
+                sortable: true,
+                render: (value, row) => (
+                  <div 
+                    className="cursor-pointer hover:underline max-w-[200px] truncate"
+                    onClick={() => handleTitleClick(row)}
+                  >
+                    {value}
+                  </div>
+                )
+              },
+              {
+                key: 'valor',
+                title: 'Valor da Parcela',
+                sortable: true,
+                render: (value) => (
+                  <div className="font-medium text-right">{formatCurrency(value)}</div>
+                )
+              },
+              {
+                key: 'valor_total_titulo',
+                title: 'Valor Total',
+                sortable: true,
+                render: (value) => (
+                  <div className="text-right text-muted-foreground">{formatCurrency(value || 0)}</div>
+                )
+              },
+              {
+                key: 'numero_parcela',
+                title: 'Parcela',
+                sortable: true,
+                render: (value, row) => (
+                  <div className="text-center">{value}/{row.total_parcelas}</div>
+                )
+              },
+              {
+                key: 'numero_documento',
+                title: 'Nº Doc/NFe',
+                sortable: true,
+                render: (value) => (
+                  <div className="text-center max-w-[100px] truncate">{value || '-'}</div>
+                )
+              },
+              {
+                key: 'data_vencimento',
+                title: 'Vencimento',
+                sortable: true,
+                render: (value) => (
+                  <div className="text-center">{formatDate(value)}</div>
+                )
+              },
+              {
+                key: 'data_hora_pagamento',
+                title: 'Data/Hora Pagamento',
+                sortable: true,
+                render: (value) => (
+                  <div className="text-center text-sm">
+                    {value ? formatDateTime(value) : '-'}
+                  </div>
+                )
+              },
+              {
+                key: 'status',
+                title: 'Status',
+                sortable: true,
+                render: (value) => <PaymentStatusBadge status={value} />
+              },
+              {
+                key: 'categoria',
+                title: 'Categoria',
+                sortable: true,
+                render: (value) => (
+                  <div className="max-w-[100px] truncate">{value}</div>
+                )
+              },
+              {
+                key: 'entidades',
+                title: 'Entidade',
+                sortable: true,
+                render: (value, row) => (
+                  <div className="max-w-[100px] truncate">
+                    {row.entidades?.nome || '-'}
+                  </div>
+                )
+              },
+              {
+                key: 'forma_pagamento',
+                title: 'Forma Pagto',
+                sortable: true,
+                render: (value) => (
+                  <div className="max-w-[100px] truncate">{value || '-'}</div>
+                )
+              },
+              {
+                key: 'created_at',
+                title: 'Data Criação',
+                sortable: true,
+                render: (value) => (
+                  <div className="text-center text-sm">{formatDate(value)}</div>
+                )
+              }
+            ]}
+            searchPlaceholder="Buscar por fornecedor, descrição, NFe..."
+            emptyMessage="Nenhuma conta encontrada"
+          />
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -1086,13 +1359,15 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                      <TableCell>
                        {installment.data_hora_pagamento ? (
                          <div className="text-sm">
-                       {formatDate(installment.data_hora_pagamento)}
+                       {formatDateTime(installment.data_hora_pagamento)}
                          </div>
                        ) : (
                          <span className="text-muted-foreground">-</span>
                        )}
                      </TableCell>
-                     <TableCell>{getStatusBadge(installment.status)}</TableCell>
+                     <TableCell>
+                       <PaymentStatusBadge status={installment.status as "aberto" | "vencido" | "pago"} />
+                     </TableCell>
                     <TableCell>{installment.categoria}</TableCell>
                     <TableCell>
                       <div className="text-sm">
@@ -1148,6 +1423,17 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                             }}
                           >
                             <Paperclip className="h-4 w-4" />
+                          </Button>
+                        )}
+
+                        {installment.status === 'pago' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openCancelPaymentModal(installment)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <X className="h-4 w-4" />
                           </Button>
                         )}
 
@@ -1521,8 +1807,10 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                                     className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md"
                                   >
                                     <option value="">Selecione...</option>
-                                    {BANCOS.map(banco => (
-                                      <option key={banco} value={banco}>{banco}</option>
+                                    {contasBancarias.map(conta => (
+                                      <option key={conta.id} value={conta.nome_banco}>
+                                        {conta.nome_banco} - Saldo: {formatCurrency(conta.saldo_atual)}
+                                      </option>
                                     ))}
                                   </select>
                                 </div>
@@ -1773,8 +2061,10 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                   className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md"
                 >
                   <option value="">Não alterar</option>
-                  {BANCOS.map(banco => (
-                    <option key={banco} value={banco}>{banco}</option>
+                  {contasBancarias.map(conta => (
+                    <option key={conta.id} value={conta.nome_banco}>
+                      {conta.nome_banco} - Saldo: {formatCurrency(conta.saldo_atual)}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -1939,117 +2229,26 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
           }}
         />
 
+        {/* Modal de Cancelamento de Pagamento */}
+        <CancelPaymentModal
+          isOpen={cancelPaymentModalOpen}
+          onClose={() => setCancelPaymentModalOpen(false)}
+          onConfirm={handleCancelPayment}
+          installment={installmentToCancel}
+          contaBancaria={installmentToCancel ? contasBancarias.find(conta => conta.nome_banco === installmentToCancel.banco) : null}
+        />
+
         {/* Modal de Despesa Recorrente */}
-        <Dialog open={recurrentExpenseOpen} onOpenChange={setRecurrentExpenseOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Criar Despesa Recorrente</DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="recurrent-fornecedor">Fornecedor</Label>
-                  <Input
-                    id="recurrent-fornecedor"
-                    placeholder="Nome do fornecedor"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="recurrent-descricao">Descrição</Label>
-                  <Input
-                    id="recurrent-descricao"
-                    placeholder="Ex: Aluguel, Energia elétrica"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="recurrent-categoria">Categoria</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIAS.map((cat) => (
-                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="recurrent-entidade">Entidade</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a entidade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {entidades.map((entidade) => (
-                        <SelectItem key={entidade.id} value={entidade.id}>
-                          {entidade.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="recurrent-valor-tipo">Tipo de Valor</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Fixo ou Variável" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="fixo">Valor Fixo</SelectItem>
-                      <SelectItem value="variavel">Valor Variável</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="recurrent-valor">Valor (se fixo)</Label>
-                  <Input
-                    id="recurrent-valor"
-                    type="number"
-                    step="0.01"
-                    placeholder="0,00"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="recurrent-vencimento">Dia do Vencimento</Label>
-                  <Input
-                    id="recurrent-vencimento"
-                    type="number"
-                    min="1"
-                    max="31"
-                    placeholder="5"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="recurrent-inicio">Data de Início</Label>
-                  <Input
-                    id="recurrent-inicio"
-                    type="date"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setRecurrentExpenseOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button>
-                  Criar Despesa Recorrente
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <RecurrentExpenseModal
+          open={recurrentExpenseOpen}
+          onOpenChange={setRecurrentExpenseOpen}
+          fornecedores={fornecedores}
+          entidades={entidades}
+          onSuccess={() => {
+            loadInstallments();
+            onDataChange();
+          }}
+        />
       </CardContent>
     </Card>
   );

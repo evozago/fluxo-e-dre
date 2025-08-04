@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable, ColumnDef } from "@/components/shared/DataTable";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -513,59 +514,79 @@ export const ProdutosManager = () => {
 
 // Componente separado para a tab de produtos
 const ProdutosTabContent = ({ produtos, formatCurrency, getStatusBadge }: any) => (
-  <div className="overflow-x-auto">
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Título Completo</TableHead>
-          <TableHead>Marca</TableHead>
-          <TableHead>Referência</TableHead>
-          <TableHead>Custo Médio</TableHead>
-          <TableHead>Preço Base</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Origem</TableHead>
-          <TableHead>Ações</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {produtos.map((produto: any) => (
-          <TableRow key={produto.id}>
-            <TableCell className="font-medium max-w-xs">
-              <div className="truncate" title={produto.titulo_completo}>
-                {produto.titulo_completo}
-              </div>
-            </TableCell>
-            <TableCell>{produto.marcas?.nome || "N/A"}</TableCell>
-            <TableCell>{produto.referencia || "-"}</TableCell>
-            <TableCell>{formatCurrency(produto.custo_medio)}</TableCell>
-            <TableCell>{formatCurrency(produto.preco_venda_base)}</TableCell>
-            <TableCell>{getStatusBadge(produto.status)}</TableCell>
-            <TableCell>
-              <Badge variant="outline">
-                {produto.origem === 'xml' ? 'XML' : produto.origem === 'xlsx' ? 'XLSX' : 'Manual'}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">
-                  <Eye className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-    
-    {produtos.length === 0 && (
-      <div className="text-center py-8">
-        <p className="text-muted-foreground">Nenhum produto cadastrado</p>
-      </div>
-    )}
-  </div>
+  <DataTable
+    data={produtos}
+    columns={[
+      {
+        key: 'titulo_completo',
+        title: 'Título Completo',
+        sortable: true,
+        className: 'max-w-xs',
+        render: (value) => (
+          <div className="truncate" title={value}>
+            {value}
+          </div>
+        )
+      },
+      {
+        key: 'marcas',
+        title: 'Marca',
+        sortable: true,
+        render: (value) => value?.nome || "N/A"
+      },
+      {
+        key: 'referencia',
+        title: 'Referência',
+        sortable: true,
+        render: (value) => value || "-"
+      },
+      {
+        key: 'custo_medio',
+        title: 'Custo Médio',
+        sortable: true,
+        render: (value) => formatCurrency(value)
+      },
+      {
+        key: 'preco_venda_base',
+        title: 'Preço Base',
+        sortable: true,
+        render: (value) => formatCurrency(value)
+      },
+      {
+        key: 'status',
+        title: 'Status',
+        sortable: true,
+        render: (value) => getStatusBadge(value)
+      },
+      {
+        key: 'origem',
+        title: 'Origem',
+        sortable: true,
+        render: (value) => (
+          <Badge variant="outline">
+            {value === 'xml' ? 'XML' : value === 'xlsx' ? 'XLSX' : 'Manual'}
+          </Badge>
+        )
+      },
+      {
+        key: 'actions',
+        title: 'Ações',
+        sortable: false,
+        render: () => (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm">
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm">
+              <Edit className="h-4 w-4" />
+            </Button>
+          </div>
+        )
+      }
+    ] as ColumnDef<any>[]}
+    searchPlaceholder="Buscar produto..."
+    emptyMessage="Nenhum produto cadastrado"
+  />
 );
 
 // Componente separado para a tab de pedidos
@@ -631,65 +652,92 @@ const PedidosTabContent = () => {
         </Badge>
       </div>
       
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Fornecedor</TableHead>
-              <TableHead>Marca</TableHead>
-              <TableHead>Referência</TableHead>
-              <TableHead>Descrição</TableHead>
-              <TableHead>Cor/Tamanho</TableHead>
-              <TableHead>Quantidade</TableHead>
-              <TableHead>Custo Unit.</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Arquivo</TableHead>
-              <TableHead>Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {pedidos.map((pedido) => (
-              <TableRow key={pedido.id}>
-                <TableCell>{pedido.fornecedores?.nome || "N/A"}</TableCell>
-                <TableCell>{pedido.marcas?.nome || "N/A"}</TableCell>
-                <TableCell className="font-medium">{pedido.referencia}</TableCell>
-                <TableCell className="max-w-xs">
-                  <div className="truncate" title={pedido.descricao}>
-                    {pedido.descricao}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="text-sm">
-                    <div>{pedido.cor}</div>
-                    <div className="text-muted-foreground">Tam: {pedido.tamanho}</div>
-                  </div>
-                </TableCell>
-                <TableCell>{pedido.quantidade}</TableCell>
-                <TableCell>{formatCurrency(pedido.custo_unitario)}</TableCell>
-                <TableCell>{getStatusBadge(pedido.status)}</TableCell>
-                <TableCell>
-                  <div className="text-xs text-muted-foreground truncate max-w-20" title={pedido.arquivo_origem}>
-                    {pedido.arquivo_origem || "-"}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" title="Vincular ao produto">
-                      <ShoppingCart className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        
-        {pedidos.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Nenhum pedido importado</p>
-          </div>
-        )}
-      </div>
+      <DataTable
+        data={pedidos}
+        columns={[
+          {
+            key: 'fornecedores',
+            title: 'Fornecedor',
+            sortable: true,
+            render: (value) => value?.nome || "N/A"
+          },
+          {
+            key: 'marcas',
+            title: 'Marca',
+            sortable: true,
+            render: (value) => value?.nome || "N/A"
+          },
+          {
+            key: 'referencia',
+            title: 'Referência',
+            sortable: true,
+            render: (value) => <span className="font-medium">{value}</span>
+          },
+          {
+            key: 'descricao',
+            title: 'Descrição',
+            sortable: true,
+            className: 'max-w-xs',
+            render: (value) => (
+              <div className="truncate" title={value}>
+                {value}
+              </div>
+            )
+          },
+          {
+            key: 'cor',
+            title: 'Cor/Tamanho',
+            sortable: true,
+            render: (value, pedido) => (
+              <div className="text-sm">
+                <div>{value}</div>
+                <div className="text-muted-foreground">Tam: {pedido.tamanho}</div>
+              </div>
+            )
+          },
+          {
+            key: 'quantidade',
+            title: 'Quantidade',
+            sortable: true
+          },
+          {
+            key: 'custo_unitario',
+            title: 'Custo Unit.',
+            sortable: true,
+            render: (value) => formatCurrency(value)
+          },
+          {
+            key: 'status',
+            title: 'Status',
+            sortable: true,
+            render: (value) => getStatusBadge(value)
+          },
+          {
+            key: 'arquivo_origem',
+            title: 'Arquivo',
+            sortable: true,
+            render: (value) => (
+              <div className="text-xs text-muted-foreground truncate max-w-20" title={value}>
+                {value || "-"}
+              </div>
+            )
+          },
+          {
+            key: 'actions',
+            title: 'Ações',
+            sortable: false,
+            render: () => (
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" title="Vincular ao produto">
+                  <ShoppingCart className="h-4 w-4" />
+                </Button>
+              </div>
+            )
+          }
+        ] as ColumnDef<any>[]}
+        searchPlaceholder="Buscar pedido..."
+        emptyMessage="Nenhum pedido importado"
+      />
     </div>
   );
 };

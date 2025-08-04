@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
-import { PayablesTableModular } from "@/components/PayablesTableModular";
+import { PayablesTable } from "@/components/PayablesTable";
 import { FornecedorManager } from "@/components/FornecedorManager";
 import { FuncionariosManager } from "@/components/FuncionariosManager";
 import { Reports } from "@/components/Reports";
@@ -108,7 +108,7 @@ const Dashboard = () => {
   const renderContent = () => {
     switch (activeTab) {
       case "payables":
-        return <PayablesTableModular onDataChange={loadDashboardStats} />;
+        return <PayablesTable onDataChange={loadDashboardStats} />;
       case "suppliers":
         return <FornecedorManager onFornecedorChange={loadDashboardStats} />;
       case "brands":

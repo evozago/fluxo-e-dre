@@ -133,6 +133,45 @@ export type Database = {
           },
         ]
       }
+      contas_bancarias: {
+        Row: {
+          id: string
+          nome_banco: string
+          agencia: string | null
+          conta: string | null
+          tipo_conta: string
+          saldo_atual: number
+          ativo: boolean
+          observacoes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          nome_banco: string
+          agencia?: string | null
+          conta?: string | null
+          tipo_conta: string
+          saldo_atual?: number
+          ativo?: boolean
+          observacoes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          nome_banco?: string
+          agencia?: string | null
+          conta?: string | null
+          tipo_conta?: string
+          saldo_atual?: number
+          ativo?: boolean
+          observacoes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       categorias_produtos: {
         Row: {
           ativo: boolean
@@ -180,45 +219,6 @@ export type Database = {
           id?: string
           meta_loja_mensal?: number | null
           observacoes?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      contas_bancarias: {
-        Row: {
-          agencia: string | null
-          ativo: boolean
-          conta: string | null
-          created_at: string
-          id: string
-          nome_banco: string
-          observacoes: string | null
-          saldo_atual: number
-          tipo_conta: string | null
-          updated_at: string
-        }
-        Insert: {
-          agencia?: string | null
-          ativo?: boolean
-          conta?: string | null
-          created_at?: string
-          id?: string
-          nome_banco: string
-          observacoes?: string | null
-          saldo_atual?: number
-          tipo_conta?: string | null
-          updated_at?: string
-        }
-        Update: {
-          agencia?: string | null
-          ativo?: boolean
-          conta?: string | null
-          created_at?: string
-          id?: string
-          nome_banco?: string
-          observacoes?: string | null
-          saldo_atual?: number
-          tipo_conta?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -806,30 +806,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      system_configurations: {
-        Row: {
-          config_data: Json
-          config_type: string
-          created_at: string
-          id: string
-          updated_at: string
-        }
-        Insert: {
-          config_data?: Json
-          config_type: string
-          created_at?: string
-          id?: string
-          updated_at?: string
-        }
-        Update: {
-          config_data?: Json
-          config_type?: string
-          created_at?: string
-          id?: string
-          updated_at?: string
-        }
-        Relationships: []
       }
       tipos_manga: {
         Row: {

@@ -1712,6 +1712,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                                         <option value="Cartão de Crédito">Cartão de Crédito</option>
                                         <option value="Dinheiro">Dinheiro</option>
                                         <option value="Cheque">Cheque</option>
+                                        <option value="Recorrente">Recorrente</option>
                                       </select>
                                     </div>
 

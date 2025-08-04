@@ -10,6 +10,7 @@ import { Plus, Edit, Trash2, Save, Search, Download, Upload, History } from "luc
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency, formatDate } from "@/lib/brazilian-utils";
+import { RecurrentExpenseModal } from "./RecurrentExpenseModal";
 
 interface Fornecedor {
   id: string;
@@ -34,8 +35,10 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isRecurrentModalOpen, setIsRecurrentModalOpen] = useState(false);
   const [selectedFornecedor, setSelectedFornecedor] = useState<Fornecedor | null>(null);
   const [fornecedorHistory, setFornecedorHistory] = useState<any[]>([]);
+  const [entidades, setEntidades] = useState<any[]>([]);
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
   const [sortField, setSortField] = useState<string>('nome');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -50,6 +53,7 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
 
   useEffect(() => {
     loadFornecedores();
+    loadEntidades();
   }, []);
 
   useEffect(() => {
@@ -75,6 +79,21 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadEntidades = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('entidades' as any)
+        .select('*')
+        .eq('ativo', true)
+        .order('nome', { ascending: true });
+
+      if (error) throw error;
+      setEntidades((data as any[]) || []);
+    } catch (error) {
+      console.error('Erro ao carregar entidades:', error);
     }
   };
 
@@ -369,6 +388,16 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
     event.target.value = '';
   };
 
+  const handleRecurrentExpense = (fornecedor: Fornecedor) => {
+    setSelectedFornecedor(fornecedor);
+    setIsRecurrentModalOpen(true);
+  };
+
+  const handleRecurrentExpenseSuccess = () => {
+    loadFornecedores();
+    onFornecedorChange?.();
+  };
+
   if (loading) {
     return (
       <Card>
@@ -452,6 +481,14 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
               sortable: false,
               render: (_, fornecedor) => (
                 <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleRecurrentExpense(fornecedor)}
+                    title="Criar despesa recorrente"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -623,6 +660,15 @@ export const FornecedorManager = ({ onFornecedorChange }: FornecedorManagerProps
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Modal para Despesa Recorrente */}
+        <RecurrentExpenseModal
+          open={isRecurrentModalOpen}
+          onOpenChange={setIsRecurrentModalOpen}
+          fornecedores={[{ id: selectedFornecedor?.id || "", nome: selectedFornecedor?.nome || "" }]}
+          entidades={entidades}
+          onSuccess={handleRecurrentExpenseSuccess}
+        />
       </CardContent>
     </Card>
   );

@@ -101,14 +101,16 @@ export const RecurrentExpenseModal = ({
         // Para despesas recorrentes, só gerar até a data final se especificada
         if (dataFinal && dataVencimento > dataFinal) break;
         
+        const valorParcela = formData.tipoValor === 'fixo' ? parseFloat(formData.valor) : 0;
+        
         installments.push({
           ...baseData,
-          valor: formData.tipoValor === 'fixo' ? parseFloat(formData.valor) : 0,
+          valor: valorParcela,
           data_vencimento: dataVencimento.toISOString().split('T')[0],
           eh_recorrente: true,
           tipo_recorrencia: 'mensal',
           valor_fixo: formData.tipoValor === 'fixo',
-          valor_total_titulo: parseFloat(formData.valor)
+          valor_total_titulo: valorParcela || null
         });
       }
 

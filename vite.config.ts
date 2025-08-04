@@ -6,12 +6,9 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
+    host: "0.0.0.0",
     port: 8080,
-<<<<<<< HEAD
     allowedHosts: true,
-=======
->>>>>>> parent of 0200e5e (Reapply "Add files via upload")
   },
   plugins: [
     react(),

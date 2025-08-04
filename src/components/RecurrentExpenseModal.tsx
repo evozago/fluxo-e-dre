@@ -104,7 +104,11 @@ export const RecurrentExpenseModal = ({
         installments.push({
           ...baseData,
           valor: formData.tipoValor === 'fixo' ? parseFloat(formData.valor) : 0,
-          data_vencimento: dataVencimento.toISOString().split('T')[0]
+          data_vencimento: dataVencimento.toISOString().split('T')[0],
+          eh_recorrente: true,
+          tipo_recorrencia: 'mensal',
+          valor_fixo: formData.tipoValor === 'fixo',
+          valor_total_titulo: parseFloat(formData.valor)
         });
       }
 

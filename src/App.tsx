@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
+import { AuthGuard } from "@/components/auth/AuthGuard";
+import { AuthPage } from "@/components/auth/AuthPage";
 import { setupGlobalErrorHandling, trackPageLoad, logger } from "@/lib/logger";
 import { useEffect } from "react";
 import Index from "./pages/Index";
@@ -45,13 +47,30 @@ function AppContent() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Index />} />
+        <Route 
+          path="/" 
+          element={
+            <AuthGuard requireAuth={false}>
+              <Index />
+            </AuthGuard>
+          } 
+        />
+        <Route 
+          path="/auth" 
+          element={
+            <AuthGuard requireAuth={false}>
+              <AuthPage />
+            </AuthGuard>
+          } 
+        />
         <Route 
           path="/dashboard" 
           element={
-            <ErrorBoundary>
-              <Dashboard />
-            </ErrorBoundary>
+            <AuthGuard requireAuth={true}>
+              <ErrorBoundary>
+                <Dashboard />
+              </ErrorBoundary>
+            </AuthGuard>
           } 
         />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

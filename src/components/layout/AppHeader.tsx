@@ -2,14 +2,9 @@ import { Bell, Menu, Search, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { UserMenu } from "@/components/auth/UserMenu";
 
 export function AppHeader() {
   const isMobile = useIsMobile();
@@ -48,25 +43,7 @@ export function AppHeader() {
             </Badge>
           </Button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <User className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Perfil</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <span>Configurações</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">
-                <span>Sair</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <UserMenu />
         </div>
       </div>
     </header>

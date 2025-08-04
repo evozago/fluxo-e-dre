@@ -3,9 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowRight, Building2, Calculator, Receipt, Package, TrendingUp, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/hooks/use-auth";
 
 const Index = () => {
   const isMobile = useIsMobile();
+  const { isAuthenticated } = useAuth();
 
   const features = [
     {
@@ -69,15 +71,27 @@ const Index = () => {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Link to="/dashboard">
-                  <Button 
-                    size={isMobile ? "default" : "lg"} 
-                    className="w-full sm:w-auto text-lg px-8 py-3 gap-2 shadow-lg hover:shadow-xl transition-all duration-300"
-                  >
-                    Acessar Sistema
-                    <ArrowRight className="h-5 w-5" />
-                  </Button>
-                </Link>
+                {isAuthenticated ? (
+                  <Link to="/dashboard">
+                    <Button 
+                      size={isMobile ? "default" : "lg"} 
+                      className="w-full sm:w-auto text-lg px-8 py-3 gap-2 shadow-lg hover:shadow-xl transition-all duration-300"
+                    >
+                      Ir para o Dashboard
+                      <ArrowRight className="h-5 w-5" />
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link to="/auth">
+                    <Button 
+                      size={isMobile ? "default" : "lg"} 
+                      className="w-full sm:w-auto text-lg px-8 py-3 gap-2 shadow-lg hover:shadow-xl transition-all duration-300"
+                    >
+                      Fazer Login
+                      <ArrowRight className="h-5 w-5" />
+                    </Button>
+                  </Link>
+                )}
                 
                 <Button 
                   variant="outline" 
@@ -189,15 +203,27 @@ const Index = () => {
                   pode simplificar a gestão do seu negócio.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link to="/dashboard">
-                    <Button 
-                      size="lg" 
-                      className="w-full sm:w-auto text-lg px-8 py-3 gap-2"
-                    >
-                      Começar Agora
-                      <ArrowRight className="h-5 w-5" />
-                    </Button>
-                  </Link>
+                  {isAuthenticated ? (
+                    <Link to="/dashboard">
+                      <Button 
+                        size="lg" 
+                        className="w-full sm:w-auto text-lg px-8 py-3 gap-2"
+                      >
+                        Ir para o Dashboard
+                        <ArrowRight className="h-5 w-5" />
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link to="/auth">
+                      <Button 
+                        size="lg" 
+                        className="w-full sm:w-auto text-lg px-8 py-3 gap-2"
+                      >
+                        Fazer Login Seguro
+                        <ArrowRight className="h-5 w-5" />
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               </div>
             </CardContent>

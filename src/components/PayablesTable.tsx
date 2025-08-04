@@ -20,7 +20,6 @@ import { CancelPaymentModal } from "./CancelPaymentModal";
 import { PaymentStatusBadge } from "@/components/shared/StatusBadge";
 import { DataTable } from "@/components/shared/DataTable";
 
-
 interface Installment {
   id: string;
   descricao: string;
@@ -113,6 +112,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
   } | null>(null);
   const [recurrentExpenseOpen, setRecurrentExpenseOpen] = useState(false);
   const [undoActions, setUndoActions] = useState<any[]>([]);
+  const [showModularView, setShowModularView] = useState(false);
   const { toast } = useToast();
 
   const CATEGORIAS = [
@@ -940,6 +940,14 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
               <Repeat className="mr-2 h-4 w-4" />
               Despesa Recorrente
             </Button>
+            
+            <Button
+              variant="outline"
+              onClick={() => setShowModularView(!showModularView)}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              {showModularView ? "Visualização Normal" : "Personalizar Colunas"}
+            </Button>
           </div>
         </div>
         
@@ -1049,6 +1057,125 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
           <div className="text-center py-8">
             <p className="text-muted-foreground">Nenhuma conta encontrada</p>
           </div>
+        ) : showModularView ? (
+          <DataTable
+            data={paginatedInstallments}
+            columns={[
+              {
+                key: 'fornecedor',
+                title: 'Fornecedor',
+                sortable: true,
+                render: (value) => (
+                  <div className="font-medium max-w-[150px] truncate">{value}</div>
+                )
+              },
+              {
+                key: 'descricao',
+                title: 'Descrição',
+                sortable: true,
+                render: (value, row) => (
+                  <div 
+                    className="cursor-pointer hover:underline max-w-[200px] truncate"
+                    onClick={() => handleTitleClick(row)}
+                  >
+                    {value}
+                  </div>
+                )
+              },
+              {
+                key: 'valor',
+                title: 'Valor da Parcela',
+                sortable: true,
+                render: (value) => (
+                  <div className="font-medium text-right">{formatCurrency(value)}</div>
+                )
+              },
+              {
+                key: 'valor_total_titulo',
+                title: 'Valor Total',
+                sortable: true,
+                render: (value) => (
+                  <div className="text-right text-muted-foreground">{formatCurrency(value || 0)}</div>
+                )
+              },
+              {
+                key: 'numero_parcela',
+                title: 'Parcela',
+                sortable: true,
+                render: (value, row) => (
+                  <div className="text-center">{value}/{row.total_parcelas}</div>
+                )
+              },
+              {
+                key: 'numero_documento',
+                title: 'Nº Doc/NFe',
+                sortable: true,
+                render: (value) => (
+                  <div className="text-center max-w-[100px] truncate">{value || '-'}</div>
+                )
+              },
+              {
+                key: 'data_vencimento',
+                title: 'Vencimento',
+                sortable: true,
+                render: (value) => (
+                  <div className="text-center">{formatDate(value)}</div>
+                )
+              },
+              {
+                key: 'data_hora_pagamento',
+                title: 'Data/Hora Pagamento',
+                sortable: true,
+                render: (value) => (
+                  <div className="text-center text-sm">
+                    {value ? formatDateTime(value) : '-'}
+                  </div>
+                )
+              },
+              {
+                key: 'status',
+                title: 'Status',
+                sortable: true,
+                render: (value) => <PaymentStatusBadge status={value} />
+              },
+              {
+                key: 'categoria',
+                title: 'Categoria',
+                sortable: true,
+                render: (value) => (
+                  <div className="max-w-[100px] truncate">{value}</div>
+                )
+              },
+              {
+                key: 'entidades',
+                title: 'Entidade',
+                sortable: true,
+                render: (value, row) => (
+                  <div className="max-w-[100px] truncate">
+                    {row.entidades?.nome || '-'}
+                  </div>
+                )
+              },
+              {
+                key: 'forma_pagamento',
+                title: 'Forma Pagto',
+                sortable: true,
+                render: (value) => (
+                  <div className="max-w-[100px] truncate">{value || '-'}</div>
+                )
+              },
+              {
+                key: 'created_at',
+                title: 'Data Criação',
+                sortable: true,
+                render: (value) => (
+                  <div className="text-center text-sm">{formatDate(value)}</div>
+                )
+              }
+            ]}
+            searchPlaceholder="Buscar por fornecedor, descrição, NFe..."
+            emptyMessage="Nenhuma conta encontrada"
+          />
         ) : (
           <>
             <div className="overflow-x-auto">

@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      ap_audit_log: {
+        Row: {
+          changed_at: string | null
+          changed_by: string | null
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          operation: string
+          record_id: string | null
+          table_name: string
+        }
+        Insert: {
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          operation: string
+          record_id?: string | null
+          table_name: string
+        }
+        Update: {
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          operation?: string
+          record_id?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
       ap_installments: {
         Row: {
           banco: string | null
@@ -940,10 +973,102 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_ap_installments_complete: {
+        Row: {
+          banco: string | null
+          categoria: string | null
+          comprovante_path: string | null
+          conta_bancaria_id: string | null
+          conta_banco_nome: string | null
+          created_at: string | null
+          dados_pagamento: string | null
+          data_hora_pagamento: string | null
+          data_pagamento: string | null
+          data_vencimento: string | null
+          descricao: string | null
+          eh_recorrente: boolean | null
+          entidade_id: string | null
+          entidade_nome: string | null
+          entidade_tipo: string | null
+          forma_pagamento: string | null
+          fornecedor: string | null
+          funcionario_id: string | null
+          funcionario_nome: string | null
+          id: string | null
+          nfe_id: string | null
+          numero_documento: string | null
+          numero_parcela: number | null
+          observacoes: string | null
+          status: string | null
+          status_calculado: string | null
+          tipo_recorrencia: string | null
+          total_parcelas: number | null
+          updated_at: string | null
+          valor: number | null
+          valor_fixo: boolean | null
+          valor_total_titulo: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ap_installments_conta_bancaria_id_fkey"
+            columns: ["conta_bancaria_id"]
+            isOneToOne: false
+            referencedRelation: "contas_bancarias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_installments_entidade_id_fkey"
+            columns: ["entidade_id"]
+            isOneToOne: false
+            referencedRelation: "entidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_installments_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "funcionarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ap_installments_nfe_id_fkey"
+            columns: ["nfe_id"]
+            isOneToOne: false
+            referencedRelation: "nfe_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
-      [_ in never]: never
+      get_dashboard_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total_aberto: number
+          vencendo_hoje: number
+          vencidos: number
+          pagos_mes_atual: number
+        }[]
+      }
+      search_ap_installments: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_status?: string
+          p_fornecedor?: string
+          p_data_inicio?: string
+          p_data_fim?: string
+          p_categoria?: string
+          p_search_term?: string
+        }
+        Returns: {
+          data: Json
+          total_count: number
+          total_aberto: number
+          total_vencido: number
+          total_pago: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

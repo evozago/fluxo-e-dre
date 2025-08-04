@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Edit, Trash2, User, DollarSign, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { formatCurrency, formatDate, formatCPF, formatPhone, getWorkingDaysInMonth, parseCurrency } from "@/lib/brazilian-utils";
+import { formatCurrency, formatDate, formatCPF, formatPhone, getWorkingDaysInMonth } from "@/lib/brazilian-utils";
 
 interface Funcionario {
   id: string;
@@ -101,7 +101,7 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
         email: formData.email.trim() || null,
         telefone: formData.telefone.trim() || null,
         endereco: formData.endereco.trim() || null,
-        salario: parseCurrency(formData.salario),
+        salario: parseFloat(formData.salario),
         dias_uteis_mes: diasUteis,
         valor_transporte_dia: valorTransporteDia,
         valor_transporte_total: valorTransporteTotal,
@@ -117,17 +117,7 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
           .update(funcionarioData)
           .eq('id', editingFuncionario.id);
 
-        if (error) {
-          if (error.code === '23505') {
-            toast({
-              title: "CPF já cadastrado",
-              description: "Este CPF já existe na base de dados",
-              variant: "destructive"
-            });
-            return;
-          }
-          throw error;
-        }
+        if (error) throw error;
 
         toast({
           title: "Funcionário atualizado",
@@ -141,75 +131,29 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
           .select('id')
           .single();
 
-        if (error) {
-          if (error.code === '23505') {
-            toast({
-              title: "CPF já cadastrado",
-              description: "Este CPF já existe na base de dados",
-              variant: "destructive"
-            });
-            return;
-          }
-          throw error;
-        }
+        if (error) throw error;
 
         // Criar funcionário como fornecedor
-        const { data: newFornecedor, error: fornecedorError } = await supabase
+        const { error: fornecedorError } = await supabase
           .from('fornecedores')
           .insert({
             nome: formData.nome,
-            cnpj_cpf: formData.cpf || null,
+            cpf_cnpj: formData.cpf || null,
             email: formData.email || null,
             telefone: formData.telefone || null,
             endereco: formData.endereco || null,
             ativo: true
-          })
-          .select('id')
-          .single();
+          });
 
         if (fornecedorError) {
-          if (fornecedorError.code === '23505') {
-            toast({
-              title: "CPF já cadastrado",
-              description: "Este CPF já existe como fornecedor",
-              variant: "destructive"
-            });
-            return;
-          }
           console.error('Erro ao criar fornecedor:', fornecedorError);
-          throw fornecedorError;
         }
 
-        // Criar funcionário como entidade
-        const { data: newEntidade, error: entidadeError } = await supabase
-          .from('entidades')
-          .insert({
-            nome: formData.nome,
-            cnpj_cpf: formData.cpf || null,
-            tipo: 'funcionario',
-            ativo: true
-          })
-          .select('id')
-          .single();
-
-        if (entidadeError) {
-          if (entidadeError.code === '23505') {
-            toast({
-              title: "CPF já cadastrado",
-              description: "Este CPF já existe como entidade",
-              variant: "destructive"
-            });
-            return;
-          }
-          console.error('Erro ao criar entidade:', entidadeError);
-          throw entidadeError;
-        }
-
-        // Gerar próximos 36 meses de contas recorrentes
+        // Gerar próximos 12 meses de contas recorrentes
         const contasRecorrentes = [];
         const hoje = new Date();
         
-        for (let i = 0; i < 36; i++) {
+        for (let i = 0; i < 12; i++) {
           const mesAtual = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
           const diasUteisDoMes = getWorkingDaysInMonth(mesAtual.getFullYear(), mesAtual.getMonth() + 1);
           const valorTransporteMes = diasUteisDoMes * valorTransporteDia;
@@ -221,7 +165,7 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
             {
               descricao: `Salário - ${formData.nome}`,
               fornecedor: formData.nome,
-              valor: parseCurrency(formData.salario),
+              valor: parseFloat(formData.salario),
               data_vencimento: dataVencimento.toISOString().split('T')[0],
               status: 'aberto',
               categoria: 'Salários',
@@ -229,7 +173,7 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
               tipo_recorrencia: 'mensal',
               valor_fixo: true,
               funcionario_id: (newFuncionario as any)?.id,
-              entidade_id: (newEntidade as any)?.id,
+              entidade_id: (newFuncionario as any)?.id,
               forma_pagamento: formData.tipo_chave_pix ? 'PIX' : null,
               dados_pagamento: formData.chave_pix && formData.tipo_chave_pix ? 
                 `${formData.chave_pix} (${formData.tipo_chave_pix})` : null
@@ -245,7 +189,7 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
               tipo_recorrencia: 'mensal',
               valor_fixo: false,
               funcionario_id: (newFuncionario as any)?.id,
-              entidade_id: (newEntidade as any)?.id,
+              entidade_id: (newFuncionario as any)?.id,
               forma_pagamento: formData.tipo_chave_pix ? 'PIX' : null,
               dados_pagamento: formData.chave_pix && formData.tipo_chave_pix ? 
                 `${formData.chave_pix} (${formData.tipo_chave_pix})` : null
@@ -263,7 +207,7 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
 
         toast({
           title: "Funcionário criado",
-          description: `Funcionário ${formData.nome} criado com 36 meses de contas recorrentes`
+          description: `Funcionário ${formData.nome} criado com 12 meses de contas recorrentes`
         });
       }
 
@@ -303,7 +247,7 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
       email: funcionario.email || "",
       telefone: funcionario.telefone || "",
       endereco: funcionario.endereco || "",
-      salario: formatCurrency(funcionario.salario),
+      salario: funcionario.salario.toString(),
       chave_pix: funcionario.chave_pix || "",
       tipo_chave_pix: funcionario.tipo_chave_pix || ""
     });
@@ -500,9 +444,11 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
                   <Label htmlFor="salario">Salário *</Label>
                   <Input
                     id="salario"
+                    type="number"
+                    step="0.01"
                     value={formData.salario}
                     onChange={(e) => setFormData({...formData, salario: e.target.value})}
-                    placeholder="R$ 0,00"
+                    placeholder="0.00"
                     required
                   />
                 </div>

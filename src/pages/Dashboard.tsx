@@ -14,8 +14,6 @@ import { ProdutosManager } from "@/components/ProdutosManager";
 import { SystemStructure } from "@/components/SystemStructure";
 import { SystemOrganogram } from "@/components/SystemOrganogram";
 import { SystemOrganogramEditable } from "@/components/SystemOrganogramEditable";
-import { BancosManager } from "@/components/BancosManager";
-import { HistoricoAlteracoes } from "@/components/HistoricoAlteracoes";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -123,10 +121,6 @@ const Dashboard = () => {
         return <SalesSystem />;
       case "employees":
         return <FuncionariosManager onFuncionarioChange={loadDashboardStats} />;
-      case "banks":
-        return <BancosManager />;
-      case "history":
-        return <HistoricoAlteracoes />;
       case "structure":
         return <SystemStructure />;
       case "organogram":

@@ -82,6 +82,7 @@ export const RecurrentExpenseModal = ({
         entidade_id: formData.entidadeId,
         status: 'aberto',
         eh_recorrente: true,
+        forma_pagamento: 'Recorrente',
         tipo_recorrencia: 'mensal',
         valor_fixo: formData.tipoValor === 'fixo'
       };

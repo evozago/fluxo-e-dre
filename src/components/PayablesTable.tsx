@@ -18,7 +18,8 @@ import { TitleDetailModal } from "./TitleDetailModal";
 import { formatCurrency, formatDate, formatDateTime, parseCurrency } from "@/lib/brazilian-utils";
 import { CancelPaymentModal } from "./CancelPaymentModal";
 import { PaymentStatusBadge } from "@/components/shared/StatusBadge";
-
+import { DataTable } from "@/components/shared/DataTable";
+import { RecurrentExpenseModal } from "./RecurrentExpenseModal";
 
 interface Installment {
   id: string;
@@ -112,6 +113,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
   } | null>(null);
   const [recurrentExpenseOpen, setRecurrentExpenseOpen] = useState(false);
   const [undoActions, setUndoActions] = useState<any[]>([]);
+  const [showModularView, setShowModularView] = useState(false);
   const { toast } = useToast();
 
   const CATEGORIAS = [
@@ -169,9 +171,16 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
         .order('data_vencimento', { ascending: true });
 
       if (error) throw error;
-      console.log('Dados carregados:', data?.length, 'parcelas');
-      console.log('Status das primeiras 3 parcelas:', data?.slice(0, 3)?.map(p => ({ id: p.id, status: p.status })));
-      setInstallments(data || []);
+      
+      // Corrigir valor_total_titulo para despesas recorrentes que estão null
+      const processedData = data?.map(item => ({
+        ...item,
+        valor_total_titulo: item.valor_total_titulo || item.valor
+      })) || [];
+      
+      console.log('Dados carregados:', processedData?.length, 'parcelas');
+      console.log('Despesas recorrentes:', processedData?.filter(p => p.eh_recorrente)?.length, 'encontradas');
+      setInstallments(processedData);
     } catch (error) {
       console.error('Erro ao carregar parcelas:', error);
       toast({
@@ -939,6 +948,14 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
               <Repeat className="mr-2 h-4 w-4" />
               Despesa Recorrente
             </Button>
+            
+            <Button
+              variant="outline"
+              onClick={() => setShowModularView(!showModularView)}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              {showModularView ? "Visualização Normal" : "Personalizar Colunas"}
+            </Button>
           </div>
         </div>
         
@@ -1048,6 +1065,125 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
           <div className="text-center py-8">
             <p className="text-muted-foreground">Nenhuma conta encontrada</p>
           </div>
+        ) : showModularView ? (
+          <DataTable
+            data={paginatedInstallments}
+            columns={[
+              {
+                key: 'fornecedor',
+                title: 'Fornecedor',
+                sortable: true,
+                render: (value) => (
+                  <div className="font-medium max-w-[150px] truncate">{value}</div>
+                )
+              },
+              {
+                key: 'descricao',
+                title: 'Descrição',
+                sortable: true,
+                render: (value, row) => (
+                  <div 
+                    className="cursor-pointer hover:underline max-w-[200px] truncate"
+                    onClick={() => handleTitleClick(row)}
+                  >
+                    {value}
+                  </div>
+                )
+              },
+              {
+                key: 'valor',
+                title: 'Valor da Parcela',
+                sortable: true,
+                render: (value) => (
+                  <div className="font-medium text-right">{formatCurrency(value)}</div>
+                )
+              },
+              {
+                key: 'valor_total_titulo',
+                title: 'Valor Total',
+                sortable: true,
+                render: (value) => (
+                  <div className="text-right text-muted-foreground">{formatCurrency(value || 0)}</div>
+                )
+              },
+              {
+                key: 'numero_parcela',
+                title: 'Parcela',
+                sortable: true,
+                render: (value, row) => (
+                  <div className="text-center">{value}/{row.total_parcelas}</div>
+                )
+              },
+              {
+                key: 'numero_documento',
+                title: 'Nº Doc/NFe',
+                sortable: true,
+                render: (value) => (
+                  <div className="text-center max-w-[100px] truncate">{value || '-'}</div>
+                )
+              },
+              {
+                key: 'data_vencimento',
+                title: 'Vencimento',
+                sortable: true,
+                render: (value) => (
+                  <div className="text-center">{formatDate(value)}</div>
+                )
+              },
+              {
+                key: 'data_hora_pagamento',
+                title: 'Data/Hora Pagamento',
+                sortable: true,
+                render: (value) => (
+                  <div className="text-center text-sm">
+                    {value ? formatDateTime(value) : '-'}
+                  </div>
+                )
+              },
+              {
+                key: 'status',
+                title: 'Status',
+                sortable: true,
+                render: (value) => <PaymentStatusBadge status={value} />
+              },
+              {
+                key: 'categoria',
+                title: 'Categoria',
+                sortable: true,
+                render: (value) => (
+                  <div className="max-w-[100px] truncate">{value}</div>
+                )
+              },
+              {
+                key: 'entidades',
+                title: 'Entidade',
+                sortable: true,
+                render: (value, row) => (
+                  <div className="max-w-[100px] truncate">
+                    {row.entidades?.nome || '-'}
+                  </div>
+                )
+              },
+              {
+                key: 'forma_pagamento',
+                title: 'Forma Pagto',
+                sortable: true,
+                render: (value) => (
+                  <div className="max-w-[100px] truncate">{value || '-'}</div>
+                )
+              },
+              {
+                key: 'created_at',
+                title: 'Data Criação',
+                sortable: true,
+                render: (value) => (
+                  <div className="text-center text-sm">{formatDate(value)}</div>
+                )
+              }
+            ]}
+            searchPlaceholder="Buscar por fornecedor, descrição, NFe..."
+            emptyMessage="Nenhuma conta encontrada"
+          />
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -2103,116 +2239,16 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
         />
 
         {/* Modal de Despesa Recorrente */}
-        <Dialog open={recurrentExpenseOpen} onOpenChange={setRecurrentExpenseOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Criar Despesa Recorrente</DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="recurrent-fornecedor">Fornecedor</Label>
-                  <Input
-                    id="recurrent-fornecedor"
-                    placeholder="Nome do fornecedor"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="recurrent-descricao">Descrição</Label>
-                  <Input
-                    id="recurrent-descricao"
-                    placeholder="Ex: Aluguel, Energia elétrica"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="recurrent-categoria">Categoria</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIAS.map((cat) => (
-                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="recurrent-entidade">Entidade</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a entidade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {entidades.map((entidade) => (
-                        <SelectItem key={entidade.id} value={entidade.id}>
-                          {entidade.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="recurrent-valor-tipo">Tipo de Valor</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Fixo ou Variável" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="fixo">Valor Fixo</SelectItem>
-                      <SelectItem value="variavel">Valor Variável</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="recurrent-valor">Valor (se fixo)</Label>
-                  <Input
-                    id="recurrent-valor"
-                    type="number"
-                    step="0.01"
-                    placeholder="0,00"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="recurrent-vencimento">Dia do Vencimento</Label>
-                  <Input
-                    id="recurrent-vencimento"
-                    type="number"
-                    min="1"
-                    max="31"
-                    placeholder="5"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="recurrent-inicio">Data de Início</Label>
-                  <Input
-                    id="recurrent-inicio"
-                    type="date"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setRecurrentExpenseOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button>
-                  Criar Despesa Recorrente
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <RecurrentExpenseModal
+          open={recurrentExpenseOpen}
+          onOpenChange={setRecurrentExpenseOpen}
+          fornecedores={fornecedores}
+          entidades={entidades}
+          onSuccess={() => {
+            loadInstallments();
+            onDataChange();
+          }}
+        />
       </CardContent>
     </Card>
   );

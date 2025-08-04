@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { TableFilters } from "@/components/shared/TableFilters";
 
 interface HistoricoAlteracao {
   id: string;
@@ -29,6 +30,7 @@ interface HistoricoAlteracao {
 export function HistoricoAlteracoes() {
   const [historico, setHistorico] = useState<HistoricoAlteracao[]>([]);
   const [loading, setLoading] = useState(false);
+  const [filterValues, setFilterValues] = useState<Record<string, any>>({});
   const [filtros, setFiltros] = useState({
     tabela: '',
     campo: '',
@@ -115,8 +117,60 @@ export function HistoricoAlteracoes() {
     return labels[tabela] || tabela;
   };
 
+  const filterConfigs = [
+    {
+      key: 'tabela',
+      label: 'Tabela',
+      type: 'select' as const,
+      options: [
+        { value: 'funcionarios', label: 'Funcionários' },
+        { value: 'fornecedores', label: 'Fornecedores' },
+        { value: 'marcas', label: 'Marcas' },
+        { value: 'produtos', label: 'Produtos' },
+        { value: 'ap_installments', label: 'Contas a Pagar' }
+      ]
+    },
+    {
+      key: 'campo',
+      label: 'Campo Alterado',
+      type: 'text' as const,
+      placeholder: 'Nome do campo...'
+    },
+    {
+      key: 'usuario',
+      label: 'Usuário',
+      type: 'text' as const,
+      placeholder: 'Nome do usuário...'
+    },
+    {
+      key: 'data',
+      label: 'Período',
+      type: 'dateRange' as const
+    }
+  ];
+
+  const handleFilterChange = (key: string, value: any) => {
+    setFilterValues(prev => ({ ...prev, [key]: value }));
+    
+    if (key === 'data_start') {
+      setFiltros(prev => ({ ...prev, data_inicio: value }));
+    } else if (key === 'data_end') {
+      setFiltros(prev => ({ ...prev, data_fim: value }));
+    } else {
+      setFiltros(prev => ({ ...prev, [key]: value }));
+    }
+  };
+
   return (
     <div className="space-y-6">
+      <TableFilters
+        filters={filterConfigs}
+        values={filterValues}
+        onChange={handleFilterChange}
+        onClear={limparFiltros}
+        collapsible={false}
+      />
+      
       <Card>
         <CardHeader>
           <CardTitle>Histórico de Alterações</CardTitle>

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable, ColumnDef } from "@/components/shared/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Calendar, DollarSign, ShoppingCart, Target, Clock, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -341,57 +341,64 @@ export const VendasDashboard = ({ onDataChange }: VendasDashboardProps) => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Data Atualização</TableHead>
-                  <TableHead>Vendedora</TableHead>
-                  <TableHead>Valor Vendido</TableHead>
-                  <TableHead>Observações</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                 {vendas.length === 0 ? (
-                   <TableRow>
-                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                       Nenhuma venda registrada este mês
-                     </TableCell>
-                   </TableRow>
-                 ) : (
-                   vendas.slice(0, 10).map((venda) => (
-                     <TableRow key={venda.id}>
-                       <TableCell>{formatDate(venda.data_venda)}</TableCell>
-                       <TableCell className="font-medium">{venda.vendedora_nome}</TableCell>
-                       <TableCell className="font-bold text-green-600">
-                         {formatCurrency(venda.valor_venda)}
-                       </TableCell>
-                       <TableCell>{venda.observacoes || '-'}</TableCell>
-                       <TableCell>
-                         <div className="flex gap-2">
-                           <Button
-                             variant="outline"
-                             size="sm"
-                             onClick={() => openEditModal(venda)}
-                           >
-                             <Edit className="h-4 w-4" />
-                           </Button>
-                           <Button
-                             variant="outline"
-                             size="sm"
-                             onClick={() => handleDelete(venda.id)}
-                           >
-                             <Trash2 className="h-4 w-4" />
-                           </Button>
-                         </div>
-                       </TableCell>
-                     </TableRow>
-                   ))
-                 )}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable
+            data={vendas.slice(0, 10)}
+            columns={[
+              {
+                key: 'data_venda',
+                title: 'Data Atualização',
+                sortable: true,
+                render: (value) => formatDate(value)
+              },
+              {
+                key: 'vendedora_nome',
+                title: 'Vendedora',
+                sortable: true,
+                render: (value) => <span className="font-medium">{value}</span>
+              },
+              {
+                key: 'valor_venda',
+                title: 'Valor Vendido',
+                sortable: true,
+                render: (value) => (
+                  <span className="font-bold text-green-600">
+                    {formatCurrency(value)}
+                  </span>
+                )
+              },
+              {
+                key: 'observacoes',
+                title: 'Observações',
+                sortable: true,
+                render: (value) => value || '-'
+              },
+              {
+                key: 'actions',
+                title: 'Ações',
+                sortable: false,
+                render: (_, venda) => (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEditModal(venda)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(venda.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )
+              }
+            ] as ColumnDef<any>[]}
+            searchPlaceholder="Buscar venda..."
+            emptyMessage="Nenhuma venda registrada este mês"
+          />
           
           {vendas.length > 10 && (
             <div className="text-center mt-4">

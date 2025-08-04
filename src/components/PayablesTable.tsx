@@ -171,9 +171,16 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
         .order('data_vencimento', { ascending: true });
 
       if (error) throw error;
-      console.log('Dados carregados:', data?.length, 'parcelas');
-      console.log('Status das primeiras 3 parcelas:', data?.slice(0, 3)?.map(p => ({ id: p.id, status: p.status })));
-      setInstallments(data || []);
+      
+      // Corrigir valor_total_titulo para despesas recorrentes que estão null
+      const processedData = data?.map(item => ({
+        ...item,
+        valor_total_titulo: item.valor_total_titulo || item.valor
+      })) || [];
+      
+      console.log('Dados carregados:', processedData?.length, 'parcelas');
+      console.log('Despesas recorrentes:', processedData?.filter(p => p.eh_recorrente)?.length, 'encontradas');
+      setInstallments(processedData);
     } catch (error) {
       console.error('Erro ao carregar parcelas:', error);
       toast({

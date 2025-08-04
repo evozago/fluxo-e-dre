@@ -113,7 +113,6 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
   } | null>(null);
   const [recurrentExpenseOpen, setRecurrentExpenseOpen] = useState(false);
   const [undoActions, setUndoActions] = useState<any[]>([]);
-  const [showModularView, setShowModularView] = useState(false);
   const { toast } = useToast();
 
   const CATEGORIAS = [
@@ -940,12 +939,6 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
             <Button onClick={() => setRecurrentExpenseOpen(true)} variant="outline">
               <Repeat className="mr-2 h-4 w-4" />
               Despesa Recorrente
-            </Button>
-            <Button 
-              onClick={() => setShowModularView(!showModularView)} 
-              variant={showModularView ? "default" : "outline"}
-            >
-              {showModularView ? "Visualização Normal" : "Personalizar Colunas"}
             </Button>
           </div>
         </div>
@@ -1849,142 +1842,6 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
             </Card>
           </div>
         </div>
-        
-        {/* Visualização Modular */}
-        {showModularView ? (
-          <div className="mt-6">
-            <DataTable
-              data={paginatedInstallments}
-              columns={[
-                {
-                  key: 'status',
-                  title: 'Status',
-                  sortable: true,
-                  width: '120px',
-                  render: (value: string) => <PaymentStatusBadge status={value as "aberto" | "vencido" | "pago"} />
-                },
-                {
-                  key: 'fornecedor',
-                  title: 'Fornecedor',
-                  sortable: true,
-                  width: '150px'
-                },
-                {
-                  key: 'descricao',
-                  title: 'Descrição',
-                  sortable: true,
-                  width: '200px'
-                },
-                {
-                  key: 'valor',
-                  title: 'Valor da Parcela',
-                  sortable: true,
-                  width: '120px',
-                  render: (value: number) => formatCurrency(value)
-                },
-                {
-                  key: 'valor_total_titulo',
-                  title: 'Valor Total',
-                  sortable: true,
-                  width: '120px',
-                  render: (value: number) => formatCurrency(value)
-                },
-                {
-                  key: 'numero_parcela',
-                  title: 'Parcela',
-                  sortable: true,
-                  width: '80px',
-                  render: (value: number, row: Installment) => `${value}/${row.total_parcelas}`
-                },
-                {
-                  key: 'numero_documento',
-                  title: 'Nº Doc/NFe',
-                  sortable: true,
-                  width: '120px',
-                  render: (value: string | null) => value || '-'
-                },
-                {
-                  key: 'data_vencimento',
-                  title: 'Vencimento',
-                  sortable: true,
-                  width: '120px',
-                  render: (value: string) => formatDate(value)
-                },
-                {
-                  key: 'data_hora_pagamento',
-                  title: 'Data/Hora Pagamento',
-                  sortable: true,
-                  width: '150px',
-                  render: (value: string | null) => value ? formatDateTime(value) : '-'
-                },
-                {
-                  key: 'categoria',
-                  title: 'Categoria',
-                  sortable: true,
-                  width: '120px'
-                },
-                {
-                  key: 'entidades',
-                  title: 'Entidade',
-                  sortable: true,
-                  width: '150px',
-                  render: (value: any) => value?.nome || '-'
-                },
-                {
-                  key: 'forma_pagamento',
-                  title: 'Forma Pgto',
-                  sortable: true,
-                  width: '120px',
-                  render: (value: string | null) => value || '-'
-                },
-                {
-                  key: 'created_at',
-                  title: 'Data Criação',
-                  sortable: true,
-                  width: '120px',
-                  render: (value: string) => formatDate(value)
-                },
-                {
-                  key: 'actions',
-                  title: 'Ações',
-                  sortable: false,
-                  width: '100px',
-                  render: (_: any, row: Installment) => (
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setEditingInstallment(row)}
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDeleteInstallment(row)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                      {row.status === 'pago' && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => openCancelPaymentModal(row)}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )
-                }
-              ]}
-              searchPlaceholder="Buscar por descrição, fornecedor..."
-            />
-          </div>
-        ) : (
-          // Visualização normal - toda a estrutura da tabela original aqui
-          <div></div>
-        )}
         
         {/* Modal de Edição em Massa */}
         <Dialog open={bulkEditOpen} onOpenChange={setBulkEditOpen}>

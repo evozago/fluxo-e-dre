@@ -103,10 +103,15 @@ export const RecurrentExpenseModal = ({
         
         const valorParcela = formData.tipoValor === 'fixo' ? parseFloat(formData.valor) : 0;
         
+        // Gerar numero_documento para despesas recorrentes
+        const dataDocumento = dataVencimento.toISOString().split('T')[0].replace(/-/g, '');
+        const numeroDocumento = `REC-${dataDocumento}-${String(i + 1).padStart(3, '0')}`;
+        
         installments.push({
           ...baseData,
           valor: valorParcela,
           data_vencimento: dataVencimento.toISOString().split('T')[0],
+          numero_documento: numeroDocumento,
           eh_recorrente: true,
           tipo_recorrencia: 'mensal',
           valor_fixo: formData.tipoValor === 'fixo',

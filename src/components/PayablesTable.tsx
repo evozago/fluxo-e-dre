@@ -66,6 +66,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
   const [startDateFilter, setStartDateFilter] = useState("");
   const [endDateFilter, setEndDateFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
+  const [categoryFilter, setCategoryFilter] = useState("todas");
   const [editingInstallment, setEditingInstallment] = useState<Installment | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentDate, setPaymentDate] = useState("");
@@ -156,7 +157,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
 
   useEffect(() => {
     filterInstallments();
-  }, [installments, searchTerm, dateFilter, startDateFilter, endDateFilter, statusFilter, sortField, sortDirection]);
+  }, [installments, searchTerm, dateFilter, startDateFilter, endDateFilter, statusFilter, categoryFilter, sortField, sortDirection]);
 
   const loadInstallments = async () => {
     try {
@@ -255,6 +256,13 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
 
       if (statusFilter !== "todos") {
         filtered = filtered.filter(item => item.status === statusFilter);
+      }
+
+      if (categoryFilter !== "todas") {
+        console.log('Aplicando filtro de categoria:', categoryFilter);
+        console.log('Antes do filtro categoria:', filtered.length, 'itens');
+        filtered = filtered.filter(item => item.categoria === categoryFilter);
+        console.log('Após filtro categoria:', filtered.length, 'itens');
       }
 
     // Aplicar ordenação se definida
@@ -1025,6 +1033,21 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
             </select>
           </div>
           
+          <div>
+            <Label htmlFor="categoryFilter">Categoria</Label>
+            <select 
+              id="categoryFilter"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-md"
+            >
+              <option value="todas">Todas</option>
+              {CATEGORIAS.map((categoria) => (
+                <option key={categoria} value={categoria}>{categoria}</option>
+              ))}
+            </select>
+          </div>
+          
           <div className="flex items-end">
             <Button 
               variant="outline" 
@@ -1034,6 +1057,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
                 setStartDateFilter("");
                 setEndDateFilter("");
                 setStatusFilter("todos");
+                setCategoryFilter("todas");
               }}
             >
               Limpar Filtros

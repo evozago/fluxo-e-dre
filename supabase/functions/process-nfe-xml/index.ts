@@ -236,9 +236,8 @@ Deno.serve(async (req) => {
         console.log('Single installment already exists, using existing:', existingInstallment.id)
         installments.push(existingInstallment.id)
       } else {
-        // No duplicatas found, create single installment with 30 days
-        const vencimento = new Date()
-        vencimento.setDate(vencimento.getDate() + 30)
+        // No duplicatas found, create single installment with emission date as due date
+        const vencimento = dataEmissao // Use emission date as due date
 
         // Get default entity (first one found) to comply with NOT NULL constraint
         const { data: entities } = await supabase
@@ -261,12 +260,13 @@ Deno.serve(async (req) => {
             fornecedor: nomeEmitente,
             valor: valorTotal,
             valor_total_titulo: valorTotal,
-            data_vencimento: vencimento.toISOString().split('T')[0],
+            data_vencimento: vencimento,
             categoria: 'NFe',
             entidade_id: entidadeId,
             numero_documento: numeroNfe,
             numero_parcela: 1,
-            total_parcelas: 1
+            total_parcelas: 1,
+            observacoes: 'Parcela criada automaticamente - NFe sem duplicatas especificadas'
           })
           .select()
           .single()

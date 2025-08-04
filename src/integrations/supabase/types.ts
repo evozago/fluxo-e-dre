@@ -1057,6 +1057,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      promote_user_to_admin: {
+        Args: { user_email: string }
+        Returns: undefined
+      }
       search_ap_installments: {
         Args: {
           p_limit?: number

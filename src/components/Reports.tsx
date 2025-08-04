@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar, BarChart3, PieChart as PieChartIcon, TrendingUp, Download, FileText, Filter } from "lucide-react";
 import { SpreadsheetTemplates } from "./SpreadsheetTemplates";
-import { formatCurrency, formatDate } from "@/lib/brazilian-utils";
+import { formatCurrency } from "@/lib/brazilian-utils";
 
 interface ReportsProps {
   onDataChange?: () => void;
@@ -241,9 +241,8 @@ export const Reports = ({ onDataChange }: ReportsProps) => {
           const mesMap = new Map();
           data?.forEach(item => {
             const date = new Date(item.data_vencimento + 'T00:00:00');
-            const mesAno = formatDate(date).substring(3); // Pega MM/YYYY
+            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
             const mesNome = date.toLocaleDateString('pt-BR', { year: 'numeric', month: 'long' });
-            const key = mesAno;
             if (!mesMap.has(key)) {
               mesMap.set(key, { mes: mesNome, total: 0, count: 0 });
             }

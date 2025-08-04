@@ -14,10 +14,9 @@ import { formatCurrency } from "@/lib/brazilian-utils";
 interface NewExpenseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess?: () => void;
 }
 
-export const NewExpenseModal = ({ open, onOpenChange, onSuccess }: NewExpenseModalProps) => {
+export const NewExpenseModal = ({ open, onOpenChange }: NewExpenseModalProps) => {
   const [formData, setFormData] = useState({
     description: "",
     supplier: "",
@@ -121,8 +120,7 @@ export const NewExpenseModal = ({ open, onOpenChange, onSuccess }: NewExpenseMod
             data_vencimento: dataVencimento.toISOString().split('T')[0],
             eh_recorrente: true,
             tipo_recorrencia: 'mensal',
-            valor_fixo: true,
-            valor_total_titulo: parseFloat(formData.value)
+            valor_fixo: true
           });
         }
 
@@ -205,7 +203,6 @@ export const NewExpenseModal = ({ open, onOpenChange, onSuccess }: NewExpenseMod
         tipoPix: ""
       });
       onOpenChange(false);
-      onSuccess?.();
     } catch (error) {
       console.error('Erro ao criar despesa:', error);
       toast({

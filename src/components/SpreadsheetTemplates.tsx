@@ -45,13 +45,13 @@ export const SpreadsheetTemplates = ({ onTemplateDownload }: SpreadsheetTemplate
       description: "Template para importação de parcelas/títulos",
       headers: ["Fornecedor", "Descrição", "Valor", "Data Vencimento", "Categoria", "Forma Pagamento", "Dados Pagamento", "Banco", "Número Documento", "Observações"],
       example: [
-        "Empresa ABC", "Serviços de TI - Jan/2024", "1500.00", "15/02/2024", "Fornecedores", "PIX", "empresa@email.com", "Banco do Brasil", "001234", "Pagamento referente aos serviços prestados"
+        "Empresa ABC", "Serviços de TI - Jan/2024", "1500.00", "2024-02-15", "Fornecedores", "PIX", "empresa@email.com", "Banco do Brasil", "001234", "Pagamento referente aos serviços prestados"
       ],
       instructions: [
         "Fornecedor: Campo obrigatório. Nome do fornecedor",
         "Descrição: Campo obrigatório. Descrição da despesa/título",
         "Valor: Campo obrigatório. Valor em formato numérico (ex: 1500.00)",
-        "Data Vencimento: Campo obrigatório. Formato: DD/MM/YYYY (ex: 15/02/2024)",
+        "Data Vencimento: Campo obrigatório. Formato: YYYY-MM-DD (ex: 2024-02-15)",
         "Categoria: Opcional. Categoria da despesa (padrão: Geral)",
         "Forma Pagamento: Opcional. Como será pago (PIX, Boleto, Transferência, etc.)",
         "Dados Pagamento: Opcional. Dados específicos (chave PIX, código de barras, etc.)",

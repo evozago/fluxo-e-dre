@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DataTable, ColumnDef } from "@/components/shared/DataTable";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit, Trash2, User, DollarSign, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -374,86 +374,63 @@ export const FuncionariosManager = ({ onFuncionarioChange }: FuncionariosManager
       </CardHeader>
       
       <CardContent>
-        <DataTable
-          data={funcionarios.filter(f => f.ativo)}
-          columns={[
-            {
-              key: 'nome',
-              title: 'Nome',
-              sortable: true,
-              render: (value) => <span className="font-medium">{value}</span>
-            },
-            {
-              key: 'cpf',
-              title: 'CPF',
-              sortable: true,
-              render: (value) => value ? formatCPF(value) : '-'
-            },
-            {
-              key: 'email',
-              title: 'Email',
-              sortable: true,
-              render: (value) => value || '-'
-            },
-            {
-              key: 'telefone',
-              title: 'Telefone',
-              sortable: true,
-              render: (value) => value ? formatPhone(value) : '-'
-            },
-            {
-              key: 'salario',
-              title: 'Salário',
-              sortable: true,
-              render: (value) => (
-                <span className="font-medium text-green-600">
-                  {formatCurrency(value)}
-                </span>
-              )
-            },
-            {
-              key: 'valor_transporte_total',
-              title: 'Vale Transporte',
-              sortable: true,
-              render: (value) => (
-                <span className="font-medium text-blue-600">
-                  {formatCurrency(value)}
-                </span>
-              )
-            },
-            {
-              key: 'chave_pix',
-              title: 'PIX',
-              sortable: true,
-              render: (value) => value || '-'
-            },
-            {
-              key: 'actions',
-              title: 'Ações',
-              sortable: false,
-              render: (_, funcionario) => (
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEdit(funcionario)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDelete(funcionario.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              )
-            }
-          ] as ColumnDef<any>[]}
-          searchPlaceholder="Buscar funcionário..."
-          emptyMessage="Nenhum funcionário encontrado"
-        />
+        {funcionarios.filter(f => f.ativo).length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Nenhum funcionário encontrado</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>CPF</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Telefone</TableHead>
+                  <TableHead>Salário</TableHead>
+                  <TableHead>Vale Transporte</TableHead>
+                  <TableHead>PIX</TableHead>
+                  <TableHead>Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {funcionarios.filter(f => f.ativo).map((funcionario) => (
+                  <TableRow key={funcionario.id}>
+                    <TableCell className="font-medium">{funcionario.nome}</TableCell>
+                    <TableCell>{funcionario.cpf ? formatCPF(funcionario.cpf) : '-'}</TableCell>
+                    <TableCell>{funcionario.email || '-'}</TableCell>
+                    <TableCell>{funcionario.telefone ? formatPhone(funcionario.telefone) : '-'}</TableCell>
+                    <TableCell className="font-medium text-green-600">
+                      {formatCurrency(funcionario.salario)}
+                    </TableCell>
+                    <TableCell className="font-medium text-blue-600">
+                      {formatCurrency(funcionario.valor_transporte_total)}
+                    </TableCell>
+                    <TableCell>{funcionario.chave_pix || '-'}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(funcionario)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(funcionario.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
         {/* Modal para Criar/Editar Funcionário */}
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

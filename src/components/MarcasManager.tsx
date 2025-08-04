@@ -4,13 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { DataTable, ColumnDef } from "@/components/shared/DataTable";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Edit, Plus, Tag, Upload } from "lucide-react";
+import { Trash2, Edit, Plus, Tag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { SpreadsheetImport, ImportConfig } from "@/components/shared/SpreadsheetImport";
 
 interface Marca {
   id: string;
@@ -39,58 +38,6 @@ export const MarcasManager = () => {
   });
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
-
-  const importConfig: ImportConfig = {
-    tableName: 'marcas',
-    displayName: 'Marcas',
-    columns: [
-      { key: 'nome', label: 'Nome da Marca', required: true, type: 'text' },
-      { key: 'fornecedor_nome', label: 'Fornecedor', required: false, type: 'text' }
-    ],
-    onImport: async (data) => {
-      for (const row of data) {
-        let fornecedor_id = null;
-        
-        if (row.fornecedor_nome) {
-          const { data: fornecedorData, error: fornecedorError } = await supabase
-            .from('fornecedores')
-            .select('id')
-            .eq('nome', row.fornecedor_nome)
-            .single();
-            
-          if (fornecedorError && fornecedorError.code === 'PGRST116') {
-            const { data: newFornecedor, error: createError } = await supabase
-              .from('fornecedores')
-              .insert({ nome: row.fornecedor_nome })
-              .select('id')
-              .single();
-              
-            if (createError) throw createError;
-            fornecedor_id = newFornecedor.id;
-          } else if (fornecedorError) {
-            throw fornecedorError;
-          } else {
-            fornecedor_id = fornecedorData.id;
-          }
-        }
-        
-        const { error } = await supabase
-          .from('marcas')
-          .insert({
-            nome: row.nome,
-            fornecedor_id
-          });
-          
-        if (error) throw error;
-      }
-      
-      loadMarcas();
-    },
-    templateData: [
-      { nome: 'Nike', fornecedor_nome: 'Fornecedor Esportivo' },
-      { nome: 'Adidas', fornecedor_nome: 'Distribuidora Roupas' }
-    ]
-  };
 
   useEffect(() => {
     loadMarcas();
@@ -246,17 +193,7 @@ export const MarcasManager = () => {
             <Tag className="h-5 w-5" />
             Gerenciar Marcas
           </CardTitle>
-          <div className="flex gap-2">
-            <SpreadsheetImport 
-              config={importConfig}
-              trigger={
-                <Button variant="outline">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Importar Planilha
-                </Button>
-              }
-            />
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={resetForm}>
                 <Plus className="mr-2 h-4 w-4" />
@@ -310,67 +247,61 @@ export const MarcasManager = () => {
                 </div>
               </form>
             </DialogContent>
-            </Dialog>
-          </div>
+          </Dialog>
         </div>
       </CardHeader>
       
       <CardContent>
-        <DataTable
-          data={marcas}
-          columns={[
-            {
-              key: 'nome',
-              title: 'Nome da Marca',
-              sortable: true,
-              render: (value) => <span className="font-medium">{value}</span>
-            },
-            {
-              key: 'fornecedores',
-              title: 'Fornecedor',
-              sortable: true,
-              render: (value) => value?.nome || "N/A"
-            },
-            {
-              key: 'ativo',
-              title: 'Status',
-              sortable: true,
-              render: (value, marca) => (
-                <Badge 
-                  variant={value ? "default" : "secondary"}
-                  className="cursor-pointer"
-                  onClick={() => handleToggleStatus(marca)}
-                >
-                  {value ? "Ativo" : "Inativo"}
-                </Badge>
-              )
-            },
-            {
-              key: 'created_at',
-              title: 'Data Criação',
-              sortable: true,
-              render: (value) => new Date(value).toLocaleDateString('pt-BR')
-            },
-            {
-              key: 'actions',
-              title: 'Ações',
-              sortable: false,
-              render: (_, marca) => (
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEdit(marca)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </div>
-              )
-            }
-          ] as ColumnDef<any>[]}
-          searchPlaceholder="Buscar marca..."
-          emptyMessage="Nenhuma marca cadastrada"
-        />
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome da Marca</TableHead>
+                <TableHead>Fornecedor</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Data Criação</TableHead>
+                <TableHead>Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {marcas.map((marca) => (
+                <TableRow key={marca.id}>
+                  <TableCell className="font-medium">{marca.nome}</TableCell>
+                  <TableCell>{marca.fornecedores?.nome || "N/A"}</TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant={marca.ativo ? "default" : "secondary"}
+                      className="cursor-pointer"
+                      onClick={() => handleToggleStatus(marca)}
+                    >
+                      {marca.ativo ? "Ativo" : "Inativo"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {new Date(marca.created_at).toLocaleDateString('pt-BR')}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(marca)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        
+        {marcas.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Nenhuma marca cadastrada</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

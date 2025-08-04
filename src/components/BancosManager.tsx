@@ -13,7 +13,6 @@ import { Plus, Edit, Trash2, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, parseCurrency } from "@/lib/brazilian-utils";
-import { ModularTable, ColumnConfig } from "@/components/shared/ModularTable";
 
 interface ContaBancaria {
   id: string;
@@ -53,12 +52,12 @@ export function BancosManager() {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('contas_bancarias')
+        .from('contas_bancarias' as any)
         .select('*')
         .order('nome_banco');
 
       if (error) throw error;
-      setContas((data || []) as ContaBancaria[]);
+      setContas((data as any) || []);
     } catch (error) {
       console.error('Erro ao buscar contas bancárias:', error);
       toast({
@@ -88,7 +87,7 @@ export function BancosManager() {
 
       if (editingConta) {
         const { error } = await supabase
-          .from('contas_bancarias')
+          .from('contas_bancarias' as any)
           .update(contaData)
           .eq('id', editingConta.id);
 
@@ -100,7 +99,7 @@ export function BancosManager() {
         });
       } else {
         const { error } = await supabase
-          .from('contas_bancarias')
+          .from('contas_bancarias' as any)
           .insert(contaData);
 
         if (error) throw error;
@@ -146,7 +145,7 @@ export function BancosManager() {
 
     try {
       const { error } = await supabase
-        .from('contas_bancarias')
+        .from('contas_bancarias' as any)
         .delete()
         .eq('id', id);
 
@@ -307,75 +306,7 @@ export function BancosManager() {
           </div>
         </CardHeader>
         <CardContent>
-          <ModularTable
-            data={contas}
-            columns={[
-              {
-                key: 'nome_banco',
-                title: 'Banco',
-                sortable: true,
-                render: (value) => <div className="font-medium">{value}</div>
-              },
-              {
-                key: 'agencia_conta',
-                title: 'Agência/Conta',
-                sortable: false,
-                render: (_, row) => (
-                  row.agencia && row.conta ? `${row.agencia} / ${row.conta}` : '-'
-                )
-              },
-              {
-                key: 'tipo_conta',
-                title: 'Tipo',
-                sortable: true,
-                render: (value) => getTipoContaLabel(value)
-              },
-              {
-                key: 'saldo_atual',
-                title: 'Saldo Atual',
-                sortable: true,
-                render: (value) => <div className="font-mono">{formatCurrency(value)}</div>,
-                className: 'text-right'
-              },
-              {
-                key: 'ativo',
-                title: 'Status',
-                sortable: true,
-                render: (value) => (
-                  <Badge variant={value ? "default" : "secondary"}>
-                    {value ? 'Ativa' : 'Inativa'}
-                  </Badge>
-                )
-              },
-              {
-                key: 'actions',
-                title: 'Ações',
-                sortable: false,
-                render: (_, row) => (
-                  <div className="flex justify-end space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(row)}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(row.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ),
-                className: 'text-right'
-              }
-            ] as ColumnConfig[]}
-            searchPlaceholder="Buscar bancos..."
-            emptyMessage="Nenhuma conta bancária encontrada"
-          />
-          {/* <Table>
+          <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Banco</TableHead>
@@ -430,7 +361,7 @@ export function BancosManager() {
                 </TableRow>
               )}
             </TableBody>
-          </Table> */}
+          </Table>
         </CardContent>
       </Card>
     </div>

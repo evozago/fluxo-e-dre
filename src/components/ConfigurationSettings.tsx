@@ -8,17 +8,28 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Edit, Trash2, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 interface ConfigurationSettingsProps {
   onConfigChange?: () => void;
 }
 
 export const ConfigurationSettings = ({ onConfigChange }: ConfigurationSettingsProps) => {
-  const [categorias, setCategorias] = useState<string[]>([]);
-  const [formasPagamento, setFormasPagamento] = useState<string[]>([]);
-  const [bancos, setBancos] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [categorias, setCategorias] = useState([
+    'Contabilidade', 'Aluguel', 'Fornecedores', 'Salários', 'Impostos',
+    'Energia', 'Telefone', 'Internet', 'Água', 'Manutenção',
+    'Marketing', 'Combustível', 'Outras Despesas', 'Geral'
+  ]);
+  
+  const [formasPagamento, setFormasPagamento] = useState([
+    'Dinheiro', 'PIX', 'Transferência Bancária', 'Boleto Bancário',
+    'Cartão de Débito', 'Cartão de Crédito', 'Cheque'
+  ]);
+  
+  const [bancos, setBancos] = useState([
+    'Banco do Brasil', 'Caixa Econômica Federal', 'Bradesco', 'Itaú',
+    'Santander', 'Nubank', 'Inter', 'C6 Bank', 'BTG Pactual',
+    'Sicoob', 'Sicredi', 'Banrisul', 'Safra', 'Outro'
+  ]);
 
   const [newItem, setNewItem] = useState("");
   const [editingItem, setEditingItem] = useState<{type: string, index: number, value: string} | null>(null);
@@ -26,62 +37,7 @@ export const ConfigurationSettings = ({ onConfigChange }: ConfigurationSettingsP
 
   const { toast } = useToast();
 
-  // Valores padrão
-  const defaultCategorias = [
-    'Contabilidade', 'Aluguel', 'Fornecedores', 'Salários', 'Impostos',
-    'Energia', 'Telefone', 'Internet', 'Água', 'Manutenção',
-    'Marketing', 'Combustível', 'Outras Despesas', 'Geral'
-  ];
-  
-  const defaultFormasPagamento = [
-    'Dinheiro', 'PIX', 'Transferência Bancária', 'Boleto Bancário',
-    'Cartão de Débito', 'Cartão de Crédito', 'Cheque'
-  ];
-  
-  const defaultBancos = [
-    'Banco do Brasil', 'Caixa Econômica Federal', 'Bradesco', 'Itaú',
-    'Santander', 'Nubank', 'Inter', 'C6 Bank', 'BTG Pactual',
-    'Sicoob', 'Sicredi', 'Banrisul', 'Safra', 'Outro'
-  ];
-
-  // Carregar configurações do banco
-  useEffect(() => {
-    loadConfigurations();
-  }, []);
-
-  const loadConfigurations = async () => {
-    try {
-      setLoading(true);
-      
-      // Carregar configurações do localStorage
-      const savedCategorias = localStorage.getItem('system_config_categorias');
-      const savedFormasPagamento = localStorage.getItem('system_config_formas_pagamento');
-      const savedBancos = localStorage.getItem('system_config_bancos');
-
-      setCategorias(savedCategorias ? JSON.parse(savedCategorias) : defaultCategorias);
-      setFormasPagamento(savedFormasPagamento ? JSON.parse(savedFormasPagamento) : defaultFormasPagamento);
-      setBancos(savedBancos ? JSON.parse(savedBancos) : defaultBancos);
-    } catch (error) {
-      console.error('Erro ao carregar configurações:', error);
-      // Usar valores padrão em caso de erro
-      setCategorias(defaultCategorias);
-      setFormasPagamento(defaultFormasPagamento);
-      setBancos(defaultBancos);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const saveConfiguration = async (type: string, data: string[]) => {
-    try {
-      localStorage.setItem(`system_config_${type}`, JSON.stringify(data));
-    } catch (error) {
-      console.error('Erro ao salvar configuração:', error);
-      throw error;
-    }
-  };
-
-  const addItem = async (type: 'categorias' | 'formasPagamento' | 'bancos') => {
+  const addItem = (type: 'categorias' | 'formasPagamento' | 'bancos') => {
     if (!newItem.trim()) {
       toast({
         title: "Erro",
@@ -105,33 +61,22 @@ export const ConfigurationSettings = ({ onConfigChange }: ConfigurationSettingsP
 
     const newList = [...currentList, newItem.trim()];
     
-    try {
-      const configType = type === 'formasPagamento' ? 'formas_pagamento' : type;
-      await saveConfiguration(configType, newList);
-      
-      if (type === 'categorias') setCategorias(newList);
-      else if (type === 'formasPagamento') setFormasPagamento(newList);
-      else setBancos(newList);
+    if (type === 'categorias') setCategorias(newList);
+    else if (type === 'formasPagamento') setFormasPagamento(newList);
+    else setBancos(newList);
 
-      setNewItem("");
-      setActiveDialog(null);
-      
-      toast({
-        title: "Item Adicionado",
-        description: `${newItem.trim()} foi adicionado com sucesso`
-      });
+    setNewItem("");
+    setActiveDialog(null);
+    
+    toast({
+      title: "Item Adicionado",
+      description: `${newItem.trim()} foi adicionado com sucesso`
+    });
 
-      onConfigChange?.();
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível salvar a configuração",
-        variant: "destructive"
-      });
-    }
+    onConfigChange?.();
   };
 
-  const editItem = async (type: 'categorias' | 'formasPagamento' | 'bancos', index: number) => {
+  const editItem = (type: 'categorias' | 'formasPagamento' | 'bancos', index: number) => {
     if (!editingItem?.value.trim()) {
       toast({
         title: "Erro",
@@ -147,58 +92,36 @@ export const ConfigurationSettings = ({ onConfigChange }: ConfigurationSettingsP
     const newList = [...currentList];
     newList[index] = editingItem.value.trim();
     
-    try {
-      const configType = type === 'formasPagamento' ? 'formas_pagamento' : type;
-      await saveConfiguration(configType, newList);
-      
-      if (type === 'categorias') setCategorias(newList);
-      else if (type === 'formasPagamento') setFormasPagamento(newList);
-      else setBancos(newList);
+    if (type === 'categorias') setCategorias(newList);
+    else if (type === 'formasPagamento') setFormasPagamento(newList);
+    else setBancos(newList);
 
-      setEditingItem(null);
-      
-      toast({
-        title: "Item Atualizado",
-        description: "Item foi atualizado com sucesso"
-      });
+    setEditingItem(null);
+    
+    toast({
+      title: "Item Atualizado",
+      description: "Item foi atualizado com sucesso"
+    });
 
-      onConfigChange?.();
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível salvar a configuração",
-        variant: "destructive"
-      });
-    }
+    onConfigChange?.();
   };
 
-  const removeItem = async (type: 'categorias' | 'formasPagamento' | 'bancos', index: number) => {
+  const removeItem = (type: 'categorias' | 'formasPagamento' | 'bancos', index: number) => {
     const currentList = type === 'categorias' ? categorias : 
                        type === 'formasPagamento' ? formasPagamento : bancos;
     
     const newList = currentList.filter((_, i) => i !== index);
     
-    try {
-      const configType = type === 'formasPagamento' ? 'formas_pagamento' : type;
-      await saveConfiguration(configType, newList);
-      
-      if (type === 'categorias') setCategorias(newList);
-      else if (type === 'formasPagamento') setFormasPagamento(newList);
-      else setBancos(newList);
+    if (type === 'categorias') setCategorias(newList);
+    else if (type === 'formasPagamento') setFormasPagamento(newList);
+    else setBancos(newList);
 
-      toast({
-        title: "Item Removido",
-        description: "Item foi removido com sucesso"
-      });
+    toast({
+      title: "Item Removido",
+      description: "Item foi removido com sucesso"
+    });
 
-      onConfigChange?.();
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível salvar a configuração",
-        variant: "destructive"
-      });
-    }
+    onConfigChange?.();
   };
 
   const renderItemList = (
@@ -295,20 +218,6 @@ export const ConfigurationSettings = ({ onConfigChange }: ConfigurationSettingsP
       </CardContent>
     </Card>
   );
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="grid gap-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="animate-pulse">Carregando configurações...</div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

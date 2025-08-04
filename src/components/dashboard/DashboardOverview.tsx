@@ -215,7 +215,6 @@ export function DashboardOverview({ stats, loading, onRefresh }: DashboardOvervi
       <NewExpenseModal 
         open={expenseModalOpen} 
         onOpenChange={setExpenseModalOpen}
-        onSuccess={onRefresh}
       />
     </div>
   );

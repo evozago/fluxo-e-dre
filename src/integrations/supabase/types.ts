@@ -19,7 +19,6 @@ export type Database = {
           banco: string | null
           categoria: string | null
           comprovante_path: string | null
-          conta_bancaria_id: string | null
           created_at: string
           dados_pagamento: string | null
           data_hora_pagamento: string | null
@@ -48,7 +47,6 @@ export type Database = {
           banco?: string | null
           categoria?: string | null
           comprovante_path?: string | null
-          conta_bancaria_id?: string | null
           created_at?: string
           dados_pagamento?: string | null
           data_hora_pagamento?: string | null
@@ -77,7 +75,6 @@ export type Database = {
           banco?: string | null
           categoria?: string | null
           comprovante_path?: string | null
-          conta_bancaria_id?: string | null
           created_at?: string
           dados_pagamento?: string | null
           data_hora_pagamento?: string | null
@@ -104,13 +101,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ap_installments_conta_bancaria_id_fkey"
-            columns: ["conta_bancaria_id"]
-            isOneToOne: false
-            referencedRelation: "contas_bancarias"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "ap_installments_entidade_id_fkey"
             columns: ["entidade_id"]
             isOneToOne: false
@@ -132,45 +122,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      contas_bancarias: {
-        Row: {
-          id: string
-          nome_banco: string
-          agencia: string | null
-          conta: string | null
-          tipo_conta: string
-          saldo_atual: number
-          ativo: boolean
-          observacoes: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          nome_banco: string
-          agencia?: string | null
-          conta?: string | null
-          tipo_conta: string
-          saldo_atual?: number
-          ativo?: boolean
-          observacoes?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          nome_banco?: string
-          agencia?: string | null
-          conta?: string | null
-          tipo_conta?: string
-          saldo_atual?: number
-          ativo?: boolean
-          observacoes?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
       }
       categorias_produtos: {
         Row: {

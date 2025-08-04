@@ -18,6 +18,7 @@ import { TitleDetailModal } from "./TitleDetailModal";
 import { formatCurrency, formatDate, formatDateTime, parseCurrency } from "@/lib/brazilian-utils";
 import { CancelPaymentModal } from "./CancelPaymentModal";
 import { PaymentStatusBadge } from "@/components/shared/StatusBadge";
+import { DataTable } from "@/components/shared/DataTable";
 
 
 interface Installment {

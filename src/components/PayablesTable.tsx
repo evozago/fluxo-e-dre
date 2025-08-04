@@ -117,6 +117,19 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
   const [showModularView, setShowModularView] = useState(false);
   const { toast } = useToast();
 
+  // handler de mudança nos filtros de data
+  const onChangeDateFilter = (value: string) => {
+    setDateFilter(value);
+    setStartDateFilter("");
+    setEndDateFilter("");
+  };
+
+  const onChangeStartEnd = (start: string, end: string) => {
+    setDateFilter("");
+    setStartDateFilter(start);
+    setEndDateFilter(end);
+  };
+
   const CATEGORIAS = [
     'Contabilidade', 'Aluguel', 'Fornecedores', 'Salários', 'Impostos',
     'Energia', 'Telefone', 'Internet', 'Água', 'Manutenção',
@@ -246,12 +259,13 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
       // Filtro por período de datas
       if (startDateFilter && endDateFilter) {
         filtered = filtered.filter(item => 
-          item.data_vencimento >= startDateFilter && item.data_vencimento <= endDateFilter
+          new Date(item.data_vencimento) >= new Date(startDateFilter) && 
+          new Date(item.data_vencimento) <= new Date(endDateFilter)
         );
       } else if (startDateFilter) {
-        filtered = filtered.filter(item => item.data_vencimento >= startDateFilter);
+        filtered = filtered.filter(item => new Date(item.data_vencimento) >= new Date(startDateFilter));
       } else if (endDateFilter) {
-        filtered = filtered.filter(item => item.data_vencimento <= endDateFilter);
+        filtered = filtered.filter(item => new Date(item.data_vencimento) <= new Date(endDateFilter));
       }
 
       if (statusFilter !== "todos") {
@@ -994,7 +1008,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
               id="dateFilter"
               type="date"
               value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
+              onChange={(e) => onChangeDateFilter(e.target.value)}
             />
           </div>
 
@@ -1004,7 +1018,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
               id="startDateFilter"
               type="date"
               value={startDateFilter}
-              onChange={(e) => setStartDateFilter(e.target.value)}
+              onChange={(e) => onChangeStartEnd(e.target.value, endDateFilter)}
             />
           </div>
 
@@ -1014,7 +1028,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
               id="endDateFilter"
               type="date"
               value={endDateFilter}
-              onChange={(e) => setEndDateFilter(e.target.value)}
+              onChange={(e) => onChangeStartEnd(startDateFilter, e.target.value)}
             />
           </div>
           

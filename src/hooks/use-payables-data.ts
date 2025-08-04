@@ -1,5 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { format, addDays } from 'date-fns';
+
+// helper
+function fmt(date: Date) {
+  return format(date, 'yyyy-MM-dd'); // → string pura YYYY-MM-DD
+}
 
 export interface PayableInstallment {
   id: string;
@@ -92,8 +98,8 @@ export const usePayablesData = (): UsePayablesDataReturn => {
         p_offset: offset,
         p_status: filters.status || null,
         p_fornecedor: filters.fornecedor || null,
-        p_data_inicio: filters.dataInicio || null,
-        p_data_fim: filters.dataFim || null,
+        p_data_inicio: filters.dataInicio ? fmt(new Date(filters.dataInicio)) : null,
+        p_data_fim: filters.dataFim ? fmt(addDays(new Date(filters.dataFim), 1)) : null,
         p_categoria: filters.categoria || null,
         p_search_term: filters.searchTerm || null
       });

@@ -125,7 +125,7 @@ export const PayablesTable = ({ onDataChange }: PayablesTableProps) => {
 
   const FORMAS_PAGAMENTO = [
     'Dinheiro', 'PIX', 'Transferência Bancária', 'Boleto Bancário',
-    'Cartão de Débito', 'Cartão de Crédito', 'Cheque'
+    'Cartão de Débito', 'Cartão de Crédito', 'Cheque', 'Recorrente'
   ];
 
   // Função para carregar contas bancárias

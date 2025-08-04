@@ -17,7 +17,7 @@ interface DashboardStats {
 }
 
 interface DashboardOverviewProps {
-  stats: DashboardStats;
+  stats: DashboardStats | null;
   loading: boolean;
   onRefresh: () => void;
 }
@@ -32,6 +32,35 @@ export function DashboardOverview({ stats, loading, onRefresh }: DashboardOvervi
       currency: 'BRL'
     }).format(value);
   };
+
+  // Show loading if data is still being fetched or stats is null
+  if (loading || !stats) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="heading-lg">Dashboard</h1>
+            <p className="text-muted-foreground">Visão geral do sistema financeiro</p>
+          </div>
+          <LoadingSpinner size="lg" />
+        </div>
+        
+        <div className="grid-responsive">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader className="space-y-2">
+                <div className="skeleton h-4 w-24" />
+                <div className="skeleton h-8 w-32" />
+              </CardHeader>
+              <CardContent>
+                <div className="skeleton h-4 w-20" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const statsCards = [
     {
@@ -63,34 +92,6 @@ export function DashboardOverview({ stats, loading, onRefresh }: DashboardOvervi
       description: "Pagamentos realizados"
     }
   ];
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="heading-lg">Dashboard</h1>
-            <p className="text-muted-foreground">Visão geral do sistema financeiro</p>
-          </div>
-          <LoadingSpinner size="lg" />
-        </div>
-        
-        <div className="grid-responsive">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader className="space-y-2">
-                <div className="skeleton h-4 w-24" />
-                <div className="skeleton h-8 w-32" />
-              </CardHeader>
-              <CardContent>
-                <div className="skeleton h-4 w-20" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 animate-fade-in">
